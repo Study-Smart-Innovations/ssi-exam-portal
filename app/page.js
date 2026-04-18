@@ -56,12 +56,12 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div className="flex justify-center gap-4 mb-6">
+        <div className="flex justify-center mb-6" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', position: 'relative', zIndex: 10 }}>
           <button 
             type="button"
             className={`btn ${role === 'student' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setRole('student')}
-            style={{ flex: 1 }}
+            style={{ width: '100%', cursor: 'pointer', position: 'relative', zIndex: 20 }}
           >
             Student
           </button>
@@ -69,7 +69,7 @@ export default function LoginPage() {
             type="button"
             className={`btn ${role === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setRole('admin')}
-            style={{ flex: 1 }}
+            style={{ width: '100%', cursor: 'pointer', position: 'relative', zIndex: 20 }}
           >
             Admin
           </button>
