@@ -38,7 +38,7 @@ export default async function ResultsHistoryPage() {
               {submissions.map((sub) => (
                 <tr key={sub._id.toString()} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <td style={{ padding: '1rem' }}>{sub.examTitle || 'Pending Evaluator Update'}</td>
-                  <td style={{ padding: '1rem' }}>{new Date(sub.submittedAt).toLocaleDateString()}</td>
+                  <td style={{ padding: '1rem' }}>{new Date(sub.submittedAt).toLocaleDateString('en-GB')}</td>
                   <td style={{ padding: '1rem' }}>
                     <span style={{ 
                       background: sub.status === 'evaluated' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)', 

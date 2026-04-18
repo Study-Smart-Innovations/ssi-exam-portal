@@ -22,6 +22,11 @@ export default async function StudentDashboardOverview() {
     batch: { $in: student.batch }
   }).toArray();
 
+  // Fetch student's submissions to count attempts
+  const submissions = await db.collection('submissions').find({
+    studentId: new ObjectId(auth.user.id)
+  }).toArray();
+
   return (
     <div>
       <h1 className="text-gradient">Welcome, {student.name}</h1>
@@ -36,7 +41,9 @@ export default async function StudentDashboardOverview() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
           {availableExams.map(exam => {
-            const attemptsLeft = student.attempts?.[exam.batch] ?? 0;
+            const usedAttempts = submissions.filter(s => s.examId.toString() === exam._id.toString()).length;
+            const maxAttempts = exam.maxAttempts || 3;
+            const attemptsLeft = Math.max(0, maxAttempts - usedAttempts);
             const hasAttempts = attemptsLeft > 0;
 
             return (
@@ -48,7 +55,7 @@ export default async function StudentDashboardOverview() {
                 </div>
                 
                 <p style={{ fontSize: '0.9rem', color: 'var(--border)', marginBottom: '1.5rem', flex: 1 }}>
-                  Attempts Remaining: <strong style={{ color: hasAttempts ? 'var(--success)' : 'var(--danger)' }}>{attemptsLeft}</strong>
+                  Attempts Remaining: <strong style={{ color: hasAttempts ? 'var(--success)' : 'var(--danger)' }}>{attemptsLeft} / {maxAttempts}</strong>
                 </p>
 
                 {hasAttempts ? (

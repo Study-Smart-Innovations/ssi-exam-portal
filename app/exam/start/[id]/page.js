@@ -11,8 +11,9 @@ export default function ExamStartPage({ params }) {
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const streamRef = useRef(null);
   
-  const [stream, setStream] = useState(null);
+  const [isCameraEnabled, setIsCameraEnabled] = useState(false);
   const [snapTaken, setSnapTaken] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,24 +35,47 @@ export default function ExamStartPage({ params }) {
       }
     };
     fetchExam();
+
+    // Cleanup camera on unmount
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
   }, [examId]);
+
+  useEffect(() => {
+    if (streamRef.current && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(e => console.error("Playback failed:", e));
+    }
+  }, [streamRef.current]);
 
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 320, height: 240 } 
+      });
+      streamRef.current = mediaStream;
+      setIsCameraEnabled(true);
+      setSnapTaken(false); // Trigger re-render to attach video element
     } catch (err) {
-      setError("Camera access is required for proctoring. Please allow camera access.");
+      console.error("Camera Error:", err);
+      setError("Camera access is required for proctoring. Please allow camera access and ensure no other app is using it.");
     }
   };
 
   const takeSnap = () => {
     if (!videoRef.current || !canvasRef.current) return;
     const context = canvasRef.current.getContext('2d');
+    
+    // Mirror the canvas to match the mirrored video feed
+    context.translate(320, 0);
+    context.scale(-1, 1);
     context.drawImage(videoRef.current, 0, 0, 320, 240);
+    
+    // Reset transformation
+    context.setTransform(1, 0, 0, 1, 0, 0);
     setSnapTaken(true);
   };
 
@@ -71,7 +95,10 @@ export default function ExamStartPage({ params }) {
       if (!res.ok) throw new Error("Failed to initialize exam session.");
       
       // Stop camera before navigating
-      if (stream) stream.getTracks().forEach(track => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
       
       router.push(`/exam/play/${examId}`);
     } catch (err) {
@@ -89,7 +116,7 @@ export default function ExamStartPage({ params }) {
 
       <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
         <h3 className="mb-4" style={{ color: 'var(--danger)' }}>⚠️ Important Guidelines (CRITICAL)</h3>
-        <ul className="flex flex-col gap-2 mb-4" style={{ paddingLeft: '1.5rem', color: 'var(--border)' }}>
+        <ul className="flex flex-col gap-2 mb-4" style={{ paddingLeft: '1.5rem', color: 'var(--foreground)' }}>
           {examState.rules?.map((rule, idx) => (
              <li key={idx}>{rule}</li>
           ))}
@@ -102,9 +129,9 @@ export default function ExamStartPage({ params }) {
 
       <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <h3 className="mb-4 text-center">Identity Verification</h3>
-        <p className="text-center mb-6" style={{ color: 'var(--border)' }}>Please hold your Government ID next to your face and take a snapshot.</p>
+        <p className="text-center mb-6" style={{ color: 'var(--foreground)' }}>Please hold your Government ID next to your face and take a snapshot.</p>
         
-        {!stream ? (
+        {!isCameraEnabled ? (
           <button className="btn btn-secondary mb-4" onClick={startCamera}>
             <Camera size={20} /> Enable Camera
           </button>
@@ -112,7 +139,15 @@ export default function ExamStartPage({ params }) {
           <div className="flex flex-col items-center gap-4">
              <div style={{ position: 'relative', border: '2px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                {/* Display video feed, hide if snap taken to show canvas instead */}
-               <video ref={videoRef} autoPlay playsInline width="320" height="240" style={{ display: snapTaken ? 'none' : 'block' }}></video>
+               <video 
+                 ref={videoRef} 
+                 autoPlay 
+                 playsInline 
+                 muted 
+                 width="320" 
+                 height="240" 
+                 style={{ display: snapTaken ? 'none' : 'block', transform: 'scaleX(-1)' }}
+               ></video>
                <canvas ref={canvasRef} width="320" height="240" style={{ display: snapTaken ? 'block' : 'none' }}></canvas>
              </div>
              

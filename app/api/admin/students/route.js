@@ -2,6 +2,23 @@ import clientPromise from '@/lib/mongodb';
 import { requireAuth } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
+export async function GET(req) {
+  try {
+    const auth = await requireAuth(['admin']);
+    if (auth.error) return new Response(JSON.stringify({ error: auth.error }), { status: auth.status });
+
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB_NAME || 'ssi_portal');
+    
+    const students = await db.collection('students').find({}).sort({ _id: -1 }).toArray();
+
+    return new Response(JSON.stringify(students), { status: 200 });
+  } catch (error) {
+    console.error('API Error:', error);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  }
+}
+
 export async function POST(req) {
   try {
     const auth = await requireAuth(['admin']);

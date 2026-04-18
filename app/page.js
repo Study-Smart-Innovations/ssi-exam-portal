@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Code, GraduationCap, ShieldCheck, ChevronRight, Lock, User, Terminal } from 'lucide-react';
 
-export default function LoginPage() {
+export default function LandingPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,71 +39,396 @@ export default function LoginPage() {
     }
   };
 
+
   return (
-    <div className="auth-container">
-      <div className="glass-panel auth-card">
-        <div className="logo-display">
-          <Image src="/logo.jpeg" alt="Study Smart Innovations" width={200} height={80} priority />
+    <main className="landing-wrapper">
+      {/* Background Elements */}
+      <div className="bg-glow bg-glow-1"></div>
+      <div className="bg-glow bg-glow-2"></div>
+      
+      {/* Navigation */}
+      <nav className="navbar glass-panel">
+        <div className="nav-container">
+          <div className="flex items-center gap-2">
+            <div className="logo-icon">
+              <Terminal size={20} className="text-primary" />
+            </div>
+            <span className="font-bold text-lg tracking-tight">SSI Portal</span>
+          </div>
+          <div className="nav-links">
+            <a href="#" className="nav-link">About</a>
+            <a href="#" className="nav-link">Proctoring</a>
+            <a href="#" className="nav-link">Support</a>
+          </div>
         </div>
-        
-        <h2 className="text-center text-gradient">Welcome Back</h2>
-        <p className="text-center mb-8" style={{ color: 'var(--border)' }}>
-          Sign in to your examination portal
-        </p>
+      </nav>
 
-        {error && (
-          <div className="mb-4 p-3" style={{ background: 'rgba(239, 68, 68, 0.1)', borderLeft: '4px solid var(--danger)', color: 'var(--danger)', borderRadius: 'var(--radius-sm)' }}>
-            {error}
+      {/* Hero Content */}
+      <div className="hero-container container">
+        <div className="hero-split">
+          {/* Left Side: Content */}
+          <div className="hero-content">
+            <div className="badge">
+              <ShieldCheck size={14} className="text-primary" />
+              <span>AI-Proctored Examination</span>
+            </div>
+            <h1 className="hero-title">
+              Engineering <br />
+              <span className="text-gradient">Potential</span> through <br />
+              Assessment.
+            </h1>
+            <p className="hero-subtitle">
+              The industry-standard portal for coding challenges and MCQ assessments. 
+              Secure, standardized, and designed for modern developers.
+            </p>
+            
+            <div className="hero-features">
+              <div className="feature-item">
+                <div className="feature-icon"><Code size={20} /></div>
+                <span>Live Coding Challenges</span>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon"><GraduationCap size={20} /></div>
+                <span>Certified Assessments</span>
+              </div>
+            </div>
           </div>
-        )}
 
-        <div className="flex justify-center mb-6" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', position: 'relative', zIndex: 10 }}>
-          <button 
-            type="button"
-            className={`btn ${role === 'student' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setRole('student')}
-            style={{ width: '100%', cursor: 'pointer', position: 'relative', zIndex: 20 }}
-          >
-            Student
-          </button>
-          <button 
-            type="button"
-            className={`btn ${role === 'admin' ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setRole('admin')}
-            style={{ width: '100%', cursor: 'pointer', position: 'relative', zIndex: 20 }}
-          >
-            Admin
-          </button>
+          {/* Right Side: Login Card */}
+          <div className="hero-form">
+            <div className="glass-panel auth-card-premium">
+              <div className="card-header">
+                <div className="logo-display-small">
+                  <Image src="/logo.jpeg" alt="SSI Logo" width={100} height={40} priority />
+                </div>
+                <h3>Welcome Back</h3>
+                <p>Sign in to your assessment portal</p>
+              </div>
+
+              {error && (
+                <div className="error-badge">
+                  {error}
+                </div>
+              )}
+
+              <div className="role-selector">
+                <button 
+                  type="button"
+                  className={`role-btn ${role === 'student' ? 'active' : ''}`}
+                  onClick={() => setRole('student')}
+                >
+                  <User size={16} />
+                  <span>Student</span>
+                </button>
+                <button 
+                  type="button"
+                  className={`role-btn ${role === 'admin' ? 'active' : ''}`}
+                  onClick={() => setRole('admin')}
+                >
+                  <Lock size={16} />
+                  <span>Admin</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleLogin} className="auth-form-v2">
+                <div className="input-group-v2">
+                  <label>Email Address</label>
+                  <div className="input-wrapper">
+                    <input 
+                      type="email" 
+                      placeholder={role === 'admin' ? "admin@studysmart.com" : "student@example.com"}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="input-group-v2">
+                  <label>Password</label>
+                  <div className="input-wrapper">
+                    <input 
+                      type="password" 
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
+                  {loading ? 'Authenticating...' : (
+                    <>
+                      <span>Sign In</span>
+                      <ChevronRight size={18} />
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
-
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Email Address</label>
-            <input 
-              type="email" 
-              placeholder={role === 'admin' ? "admin@studysmart.com" : "student@example.com"}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Password</label>
-            <input 
-              type="password" 
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <button type="submit" className="btn btn-primary mt-4" disabled={loading} style={{ width: '100%' }}>
-            {loading ? 'Authenticating...' : 'Sign In'}
-          </button>
-        </form>
       </div>
-    </div>
+
+      <style jsx>{`
+        .landing-wrapper {
+          min-height: 100vh;
+          width: 100vw;
+          position: relative;
+          background-color: var(--background);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+          overflow: hidden;
+        }
+
+        .bg-glow {
+          position: absolute;
+          width: 600px;
+          height: 600px;
+          border-radius: 50%;
+          filter: blur(120px);
+          z-index: 0;
+          opacity: 0.15;
+          pointer-events: none;
+        }
+
+        .bg-glow-1 {
+          top: -100px;
+          right: -100px;
+          background: var(--primary);
+        }
+
+        .bg-glow-2 {
+          bottom: -100px;
+          left: -100px;
+          background: var(--accent);
+        }
+
+        .navbar {
+          position: fixed;
+          top: 1.5rem;
+          left: 50%;
+          transform: translateX(-50%);
+          width: calc(100% - 3rem);
+          max-width: 1100px;
+          padding: 0.75rem 1.5rem;
+          z-index: 100;
+          border-radius: var(--radius-xl);
+        }
+
+        .nav-container {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .nav-links {
+          display: flex;
+          gap: 2rem;
+        }
+
+        .nav-link {
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: var(--foreground);
+          opacity: 0.7;
+          text-decoration: none;
+          transition: 0.2s opacity;
+        }
+
+        .nav-link:hover {
+          opacity: 1;
+        }
+
+        .hero-container {
+          position: relative;
+          z-index: 1;
+          width: 100%;
+          max-width: 1100px;
+        }
+
+        .hero-split {
+          display: grid;
+          grid-template-columns: 1.2fr 0.8fr;
+          gap: 4rem;
+          align-items: center;
+        }
+
+        .hero-content {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .badge {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          padding: 0.4rem 0.8rem;
+          border-radius: 2rem;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--primary);
+          width: fit-content;
+        }
+
+        .hero-title {
+          font-size: 4rem;
+          line-height: 1;
+          margin: 0;
+        }
+
+        .hero-subtitle {
+          font-size: 1.125rem;
+          color: var(--foreground);
+          opacity: 0.7;
+          max-width: 500px;
+          line-height: 1.6;
+        }
+
+        .hero-features {
+          display: flex;
+          gap: 2rem;
+          margin-top: 1rem;
+        }
+
+        .feature-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+        }
+
+        .feature-icon {
+          color: var(--primary);
+        }
+
+        .auth-card-premium {
+          padding: 2.5rem;
+          border-radius: var(--radius-xl);
+          box-shadow: var(--shadow-premium);
+        }
+
+        .card-header {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .card-header h3 {
+          font-size: 1.5rem;
+          margin-bottom: 0.35rem;
+        }
+
+        .card-header p {
+          font-size: 0.875rem;
+          color: var(--foreground);
+          opacity: 0.6;
+        }
+
+        .logo-display-small {
+          margin-bottom: 1.5rem;
+          display: flex;
+          justify-content: center;
+        }
+
+        .role-selector {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.75rem;
+          margin-bottom: 2rem;
+          background: rgba(0, 0, 0, 0.2);
+          padding: 0.35rem;
+          border-radius: var(--radius-md);
+        }
+
+        .role-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 0.625rem;
+          border-radius: var(--radius-sm);
+          border: none;
+          background: transparent;
+          color: var(--foreground);
+          opacity: 0.6;
+          font-weight: 600;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: 0.2s all;
+        }
+
+        .role-btn.active {
+          background: var(--secondary);
+          opacity: 1;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .auth-form-v2 {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+
+        .input-group-v2 {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .input-group-v2 label {
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          opacity: 0.5;
+        }
+
+        .btn-full {
+          width: 100%;
+          margin-top: 0.5rem;
+        }
+
+        .error-badge {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          color: #ef4444;
+          padding: 0.75rem;
+          border-radius: var(--radius-md);
+          font-size: 0.8125rem;
+          margin-bottom: 1.5rem;
+          text-align: center;
+        }
+
+        @media (max-width: 1024px) {
+          .hero-split {
+            grid-template-columns: 1fr;
+            gap: 3rem;
+            text-align: center;
+          }
+          .hero-content {
+            align-items: center;
+          }
+          .hero-title {
+            font-size: 3rem;
+          }
+          .navbar {
+            top: 1rem;
+          }
+          .landing-wrapper {
+            padding-top: 6rem;
+            overflow-y: auto;
+            justify-content: flex-start;
+          }
+        }
+      `}</style>
+    </main>
   );
 }

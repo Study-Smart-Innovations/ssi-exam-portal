@@ -1,25 +1,49 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 
-
-export default function NewExamPage() {
+export default function EditExamPage({ params }) {
   const router = useRouter();
+  const { id } = use(params);
+  
   const [formData, setFormData] = useState({
     title: '',
     batch: 'C',
     duration: 60,
     maxAttempts: 3,
-    rules: "1. Camera must be ON.\n2. Do NOT change tabs.",
+    rules: '',
     mcqs: [],
     codingQuestions: []
   });
   const fileInputRef = useRef(null);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchExam = async () => {
+      try {
+        const res = await fetch(`/api/admin/exams/${id}`);
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch exam');
+        
+        setFormData({
+          ...data,
+          rules: Array.isArray(data.rules) ? data.rules.join('\n') : data.rules
+        });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchExam();
+  }, [id]);
 
   const handleAddMCQ = () => {
     setFormData(prev => ({
@@ -95,21 +119,19 @@ export default function NewExamPage() {
         codingQuestions: [...prev.codingQuestions, ...newCoding]
       }));
       
-      // Reset file input
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
     reader.readAsBinaryString(file);
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
     setError('');
 
     try {
-      const res = await fetch('/api/admin/exams', {
-        method: 'POST',
+      const res = await fetch(`/api/admin/exams/${id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
@@ -118,21 +140,23 @@ export default function NewExamPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create exam');
+      if (!res.ok) throw new Error(data.error || 'Failed to update exam');
 
       router.push('/admin/exams');
       router.refresh();
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) return <div className="container p-8 text-center">Loading exam configuration...</div>;
 
   return (
     <div className="container" style={{ maxWidth: '800px' }}>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-gradient">Create New Exam</h1>
+        <h1 className="text-gradient">Edit Exam</h1>
         <div className="flex gap-2">
           <button type="button" onClick={downloadTemplate} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
             Download Template
@@ -198,7 +222,7 @@ export default function NewExamPage() {
               <button type="button" className="btn btn-secondary" onClick={handleAddMCQ} style={{ padding: '0.5rem 1rem' }}>+ Add MCQ</button>
            </div>
            {formData.mcqs.map((mcq, idx) => (
-             <div key={mcq.id} className="mb-4" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)'}}>
+             <div key={mcq.id || idx} className="mb-4" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)'}}>
                 <div className="flex justify-between items-center mb-2">
                    <label>Question {idx + 1}</label>
                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -247,7 +271,7 @@ export default function NewExamPage() {
               <button type="button" className="btn btn-secondary" onClick={handleAddCoding} style={{ padding: '0.5rem 1rem' }}>+ Add Coding Q</button>
            </div>
            {formData.codingQuestions.map((cq, idx) => (
-             <div key={cq.id} className="mb-4" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)'}}>
+             <div key={cq.id || idx} className="mb-4" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)'}}>
                 <div className="flex justify-between items-center mb-2">
                    <label>Coding Question {idx + 1}</label>
                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -282,8 +306,8 @@ export default function NewExamPage() {
 
         <div className="flex gap-4 mb-8">
            <button type="button" onClick={() => router.back()} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
-           <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={loading}>
-             {loading ? 'Saving...' : 'Save Exam Configuration'}
+           <button type="submit" className="btn btn-primary" style={{ flex: 2 }} disabled={saving}>
+             {saving ? 'Saving...' : 'Update Exam Configuration'}
            </button>
         </div>
       </form>

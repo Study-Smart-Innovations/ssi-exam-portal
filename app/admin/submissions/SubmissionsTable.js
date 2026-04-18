@@ -79,7 +79,13 @@ export default function SubmissionsTable({ initialSubmissions }) {
                      <div style={{ fontSize: '0.8rem', color: 'var(--border)' }}>{sub.studentEmail}</div>
                   </td>
                   <td style={{ padding: '1rem' }}>{sub.examTitle}</td>
-                  <td style={{ padding: '1rem' }}>{new Date(sub.submittedAt).toLocaleDateString()}</td>
+                  <td style={{ padding: '1rem' }}>
+                    {new Date(sub.submittedAt).toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    })}
+                  </td>
                   <td style={{ padding: '1rem' }}>
                     <span style={{ 
                       background: evaluated ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)', 

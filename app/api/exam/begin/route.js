@@ -17,20 +17,17 @@ export async function POST(req) {
     const exam = await db.collection('exams').findOne({ _id: new ObjectId(examId) });
     if (!exam) return new Response(JSON.stringify({ error: 'Exam not found' }), { status: 404 });
 
-    const student = await db.collection('students').findOne({ _id: new ObjectId(auth.user.id) });
-    
-    // Check attempts
-    const attemptsLeft = student.attempts?.[exam.batch] ?? 0;
-    if (attemptsLeft <= 0) {
-       return new Response(JSON.stringify({ error: 'No attempts left for this batch.' }), { status: 403 });
-    }
+    // Check attempts dynamically by counting submissions
+    const submissionCount = await db.collection('submissions').countDocuments({
+      studentId: new ObjectId(auth.user.id),
+      examId: new ObjectId(examId)
+    });
 
-    // Decrement attempts
-    const updatePath = `attempts.${exam.batch}`;
-    await db.collection('students').updateOne(
-      { _id: new ObjectId(auth.user.id) },
-      { $inc: { [updatePath]: -1 } }
-    );
+    const maxAttempts = exam.maxAttempts || 3;
+    
+    if (submissionCount >= maxAttempts) {
+       return new Response(JSON.stringify({ error: 'Maximum attempts reached for this exam.' }), { status: 403 });
+    }
 
     // Create session (submission doc)
     const newSubmission = {

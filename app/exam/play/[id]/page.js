@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import CameraProctor from '@/components/CameraProctor';
 
 export default function ExamPlayPage({ params }) {
   const unwrappedParams = use(params);
@@ -11,7 +12,7 @@ export default function ExamPlayPage({ params }) {
 
   const [exam, setExam] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [activeTab, setActiveTab] = useState('mcq'); // 'mcq' or 'coding'
+  const [combinedQuestions, setCombinedQuestions] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   
   const [mcqAnswers, setMcqAnswers] = useState({});
@@ -29,6 +30,11 @@ export default function ExamPlayPage({ params }) {
       if (res.ok) {
         setExam(data.exam);
         setTimeLeft(data.exam.duration * 60);
+
+        // Merge MCQs and Coding into one sequence
+        const mcqs = (data.exam.mcqs || []).map(q => ({ ...q, type: 'mcq' }));
+        const coding = (data.exam.codingQuestions || []).map(q => ({ ...q, type: 'coding' }));
+        setCombinedQuestions([...mcqs, ...coding]);
       } else {
         alert(data.error);
         router.push('/dashboard');
@@ -95,10 +101,9 @@ export default function ExamPlayPage({ params }) {
     }
   };
 
-  if (!exam) return <div className="container mt-8 text-center">Loading Exam Environment...</div>;
+  if (!exam || combinedQuestions.length === 0) return <div className="container mt-8 text-center">Loading Exam Environment...</div>;
 
-  const currentQuestions = activeTab === 'mcq' ? exam.mcqs : exam.codingQuestions;
-  const currentQ = currentQuestions[currentIdx];
+  const currentQ = combinedQuestions[currentIdx];
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -125,14 +130,11 @@ export default function ExamPlayPage({ params }) {
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar (Navigation) */}
         <aside style={{ width: '250px', background: 'var(--background)', borderRight: '1px solid var(--border)', overflowY: 'auto', padding: '1rem' }}>
-           <div className="flex gap-2 mb-4">
-             <button className={`btn text-sm ${activeTab === 'mcq' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setActiveTab('mcq'); setCurrentIdx(0); }} style={{ flex: 1, padding: '0.5rem' }}>MCQs ({exam.mcqs?.length || 0})</button>
-             <button className={`btn text-sm ${activeTab === 'coding' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setActiveTab('coding'); setCurrentIdx(0); }} style={{ flex: 1, padding: '0.5rem' }}>Coding ({exam.codingQuestions?.length || 0})</button>
-           </div>
+           <h4 className="mb-4">Question List</h4>
            
            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
-             {currentQuestions?.map((q, idx) => {
-               const isAnswered = activeTab === 'mcq' ? mcqAnswers[q.id] !== undefined : !!codingAnswers[q.id];
+             {combinedQuestions.map((q, idx) => {
+               const isAnswered = q.type === 'mcq' ? mcqAnswers[q.id] !== undefined : !!codingAnswers[q.id];
                const isReview = markedForReview.has(idx);
                return (
                  <button 
@@ -165,7 +167,12 @@ export default function ExamPlayPage({ params }) {
           {currentQ ? (
             <div className="glass-panel" style={{ padding: '2rem', minHeight: '60vh', display: 'flex', flexDirection: 'column' }}>
                <div className="flex justify-between items-center mb-6">
-                 <h3>Question {currentIdx + 1}</h3>
+                 <div>
+                   <h3 className="mb-1">Question {currentIdx + 1}</h3>
+                   <span style={{ fontSize: '0.8rem', color: 'var(--primary)', background: 'rgba(59, 130, 246, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                     {currentQ.type.toUpperCase()}
+                   </span>
+                 </div>
                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                     <input type="checkbox" style={{ width: 'auto' }} checked={markedForReview.has(currentIdx)} onChange={() => toggleReview(currentIdx)} />
                     Mark for Review
@@ -174,8 +181,8 @@ export default function ExamPlayPage({ params }) {
                
                <p style={{ fontSize: '1.1rem', marginBottom: '2rem' }}>{currentQ.question}</p>
 
-               {activeTab === 'mcq' ? (
-                 <div className="flex flex-col gap-3">
+               {currentQ.type === 'mcq' ? (
+                 <div className="flex flex-col gap-4">
                    {currentQ.options.map((opt, oIdx) => (
                      <label key={oIdx} style={{
                        display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem',
@@ -195,18 +202,18 @@ export default function ExamPlayPage({ params }) {
                  <textarea 
                    rows="12" 
                    placeholder="Write your code here..." 
-                   style={{ fontFamily: 'monospace' }}
+                   style={{ fontFamily: 'monospace', padding: '1.5rem', background: '#0a0a0c', border: '1px solid var(--border)', fontSize: '1rem' }}
                    value={codingAnswers[currentQ.id] || ''}
                    onChange={(e) => setCodingAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
                  />
                )}
                
-               <div className="mt-auto pt-8 flex justify-between">
-                  <button className="btn btn-secondary" onClick={() => setCurrentIdx(p => Math.max(0, p - 1))} disabled={currentIdx === 0}>
+               <div className="mt-auto flex justify-between" style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border)' }}>
+                  <button className="btn btn-secondary" onClick={() => setCurrentIdx(p => (p - 1 + combinedQuestions.length) % combinedQuestions.length)}>
                     <ChevronLeft /> Previous
                   </button>
-                  <button className="btn btn-secondary" onClick={() => setCurrentIdx(p => Math.min(currentQuestions.length - 1, p + 1))} disabled={currentIdx === currentQuestions.length - 1}>
-                    Next <ChevronRight />
+                  <button className="btn btn-primary" onClick={() => setCurrentIdx(p => (p + 1) % combinedQuestions.length)}>
+                    Next Question <ChevronRight />
                   </button>
                </div>
             </div>
@@ -215,6 +222,8 @@ export default function ExamPlayPage({ params }) {
           )}
         </main>
       </div>
+
+      <CameraProctor />
     </div>
   );
 }
