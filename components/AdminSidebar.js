@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Users, BookOpen, BarChart3, Settings, LogOut, CheckCircle } from 'lucide-react';
+import { Users, BookOpen, BarChart3, Settings, LogOut, CheckCircle, LifeBuoy } from 'lucide-react';
 import Image from 'next/image';
 
 export default function AdminSidebar() {
@@ -20,6 +20,7 @@ export default function AdminSidebar() {
     { name: 'Exams', path: '/admin/exams', icon: BookOpen },
     { name: 'Submissions', path: '/admin/submissions', icon: CheckCircle },
     { name: 'Settings', path: '/admin/settings', icon: Settings },
+    { name: 'Support', path: '/support', icon: LifeBuoy },
   ];
 
   return (

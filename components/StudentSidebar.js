@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Award, LogOut } from 'lucide-react';
+import { LayoutDashboard, Award, LogOut, LifeBuoy } from 'lucide-react';
 import Image from 'next/image';
 
 export default function StudentSidebar() {
@@ -17,6 +17,7 @@ export default function StudentSidebar() {
   const navItems = [
     { name: 'My Exams', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Results & Certificates', path: '/dashboard/results', icon: Award },
+    { name: 'Support', path: '/support', icon: LifeBuoy },
   ];
 
   return (

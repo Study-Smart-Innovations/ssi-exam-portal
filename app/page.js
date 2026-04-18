@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { Code, GraduationCap, ShieldCheck, ChevronRight, Lock, User, Terminal } from 'lucide-react';
 
@@ -45,7 +46,7 @@ export default function LandingPage() {
       {/* Background Elements */}
       <div className="bg-glow bg-glow-1"></div>
       <div className="bg-glow bg-glow-2"></div>
-      
+
       {/* Navigation */}
       <nav className="navbar glass-panel">
         <div className="nav-container">
@@ -56,9 +57,7 @@ export default function LandingPage() {
             <span className="font-bold text-lg tracking-tight">SSI Portal</span>
           </div>
           <div className="nav-links">
-            <a href="#" className="nav-link">About</a>
-            <a href="#" className="nav-link">Proctoring</a>
-            <a href="#" className="nav-link">Support</a>
+            <Link href="/support" className="nav-link">Support</Link>
           </div>
         </div>
       </nav>
@@ -78,10 +77,10 @@ export default function LandingPage() {
               Assessment.
             </h1>
             <p className="hero-subtitle">
-              The industry-standard portal for coding challenges and MCQ assessments. 
+              The industry-standard portal for coding challenges and MCQ assessments.
               Secure, standardized, and designed for modern developers.
             </p>
-            
+
             <div className="hero-features">
               <div className="feature-item">
                 <div className="feature-icon"><Code size={20} /></div>
@@ -112,7 +111,7 @@ export default function LandingPage() {
               )}
 
               <div className="role-selector">
-                <button 
+                <button
                   type="button"
                   className={`role-btn ${role === 'student' ? 'active' : ''}`}
                   onClick={() => setRole('student')}
@@ -120,7 +119,7 @@ export default function LandingPage() {
                   <User size={16} />
                   <span>Student</span>
                 </button>
-                <button 
+                <button
                   type="button"
                   className={`role-btn ${role === 'admin' ? 'active' : ''}`}
                   onClick={() => setRole('admin')}
@@ -134,8 +133,8 @@ export default function LandingPage() {
                 <div className="input-group-v2">
                   <label>Email Address</label>
                   <div className="input-wrapper">
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       placeholder={role === 'admin' ? "admin@studysmart.com" : "student@example.com"}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -143,12 +142,12 @@ export default function LandingPage() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="input-group-v2">
                   <label>Password</label>
                   <div className="input-wrapper">
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -231,7 +230,7 @@ export default function LandingPage() {
           gap: 2rem;
         }
 
-        .nav-link {
+        :global(.nav-link) {
           font-size: 0.875rem;
           font-weight: 500;
           color: var(--foreground);
@@ -240,7 +239,7 @@ export default function LandingPage() {
           transition: 0.2s opacity;
         }
 
-        .nav-link:hover {
+        :global(.nav-link:hover) {
           opacity: 1;
         }
 

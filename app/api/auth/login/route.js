@@ -14,8 +14,8 @@ export async function POST(req) {
       const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
       const adminEmail = 'admin@studysmart.com'; // Default admin email mapping, could also be configured
 
-      if (email === adminEmail && password === adminPassword) {
-        const token = signToken({ email, role: 'admin' });
+      if (email.toLowerCase() === adminEmail.toLowerCase() && password === adminPassword) {
+        const token = signToken({ email: adminEmail, role: 'admin' });
         // Set cookie
         const headers = new Headers();
         headers.append('Set-Cookie', `auth_token=${token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict`);
@@ -26,7 +26,11 @@ export async function POST(req) {
     } else if (role === 'student') {
       const client = await clientPromise;
       const db = client.db(process.env.MONGODB_DB_NAME || 'ssi_portal');
-      const student = await db.collection('students').findOne({ email });
+      
+      // Case-insensitive email lookup
+      const student = await db.collection('students').findOne({ 
+        email: { $regex: new RegExp(`^${email.trim()}$`, "i") } 
+      });
 
       if (!student) {
         return new Response(JSON.stringify({ error: 'Student not found' }), { status: 404 });

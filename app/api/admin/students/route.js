@@ -41,21 +41,22 @@ export async function POST(req) {
     const attempts = {};
     batch.forEach(b => attempts[b] = 3);
 
-    // Filter out existing emails efficiently
-    const emailsToImport = studentsArr.map(s => s.email).filter(Boolean);
+    // Filter out existing emails efficiently (case-insensitive)
+    const emailsToImport = studentsArr.map(s => s.email?.toLowerCase().trim()).filter(Boolean);
     const existingDocs = await db.collection('students').find({ email: { $in: emailsToImport } }).toArray();
-    const existingEmails = new Set(existingDocs.map(d => d.email));
+    const existingEmails = new Set(existingDocs.map(d => d.email.toLowerCase()));
 
     const newDocuments = [];
     let insertedCount = 0;
 
     for (const s of studentsArr) {
       if (!s.name || !s.email || !s.phone) continue;
+      const lowerEmail = s.email.toLowerCase().trim();
 
-      if (!existingEmails.has(s.email)) {
+      if (!existingEmails.has(lowerEmail)) {
          newDocuments.push({
            name: s.name,
-           email: s.email,
+           email: lowerEmail,
            phone: s.phone,
            batch,
            password: hashedPassword,
@@ -63,7 +64,7 @@ export async function POST(req) {
            createdAt: new Date()
          });
          // Add to set to prevent duplicates within the imported file itself
-         existingEmails.add(s.email);
+         existingEmails.add(lowerEmail);
       }
     }
 
