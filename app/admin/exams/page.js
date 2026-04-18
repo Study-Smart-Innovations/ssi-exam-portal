@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Edit, Trash2, Plus } from 'lucide-react';
+import { useModal } from '@/lib/contexts/ModalContext';
 
 export default function ExamsPage() {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { showAlert, showConfirm } = useModal();
 
   const fetchExams = async () => {
     try {
@@ -28,9 +30,13 @@ export default function ExamsPage() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this exam configuration? This action cannot be undone.')) {
-      return;
-    }
+    const confirmed = await showConfirm(
+      'Delete Exam Configuration', 
+      'Are you sure you want to delete this exam configuration? All associated question mappings and batch settings will be removed. This action cannot be undone.', 
+      'DANGER'
+    );
+    
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/admin/exams/${id}`, { method: 'DELETE' });
@@ -41,8 +47,9 @@ export default function ExamsPage() {
       
       // Remove from state
       setExams(exams.filter(e => e._id !== id));
+      showAlert('Deleted', 'The exam configuration has been successfully removed.', 'SUCCESS');
     } catch (err) {
-      alert(err.message);
+      showAlert('Error', err.message, 'DANGER');
     }
   };
 

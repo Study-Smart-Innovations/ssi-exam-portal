@@ -93,6 +93,18 @@ export default function ExamStartPage({ params }) {
       });
       
       if (!res.ok) throw new Error("Failed to initialize exam session.");
+
+      // Log activity
+      await fetch('/api/exam/log_activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'STARTED',
+          examId,
+          examTitle: examState.title,
+          message: 'Student successfully verified identity and started the exam.'
+        })
+      });
       
       // Stop camera before navigating
       if (streamRef.current) {

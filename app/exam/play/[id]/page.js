@@ -4,11 +4,14 @@ import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import CameraProctor from '@/components/CameraProctor';
+import { useModal } from '@/lib/contexts/ModalContext';
+import { useRef } from 'react';
 
 export default function ExamPlayPage({ params }) {
   const unwrappedParams = use(params);
   const examId = unwrappedParams.id;
   const router = useRouter();
+  const { showAlert } = useModal();
 
   const [exam, setExam] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -21,6 +24,7 @@ export default function ExamPlayPage({ params }) {
   
   const [warnings, setWarnings] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const lastLogTimestampRef = useRef(0);
 
   // Fetch exam data to play (including questions without answers)
   useEffect(() => {
@@ -36,7 +40,7 @@ export default function ExamPlayPage({ params }) {
         const coding = (data.exam.codingQuestions || []).map(q => ({ ...q, type: 'coding' }));
         setCombinedQuestions([...mcqs, ...coding]);
       } else {
-        alert(data.error);
+        await showAlert('Error', data.error, 'DANGER');
         router.push('/dashboard');
       }
     };
@@ -46,18 +50,37 @@ export default function ExamPlayPage({ params }) {
   // Tab switching detection
   const handleVisibilityChange = useCallback(() => {
     if (document.hidden && !submitting) {
+      // Prevent duplicate logs (debounce)
+      const now = Date.now();
+      if (now - lastLogTimestampRef.current < 2000) return;
+      lastLogTimestampRef.current = now;
+
+      let currentWarnings = 0;
       setWarnings(w => {
-        const newWarnings = w + 1;
-        if (newWarnings === 1) {
-          alert('WARNING: You have switched tabs or minimized the window. Doing this again will disqualify you and auto-submit the exam.');
-        } else if (newWarnings === 2) {
-          alert('DISQUALIFIED: You switched tabs again. The exam is now submitting automatically.');
-          submitExam(); // Auto submit
-        }
-        return newWarnings;
+        currentWarnings = w + 1;
+        return currentWarnings;
       });
+
+      if (currentWarnings === 1) {
+        showAlert('Proctoring Warning', 'You have switched tabs or minimized the window. Doing this again will disqualify you and auto-submit the exam.', 'DANGER');
+        // Log first warning
+        fetch('/api/exam/log_activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'TAB_SWITCH', examId, examTitle: exam.title, message: 'FIRST WARNING: Student switched tabs.' })
+        });
+      } else if (currentWarnings === 2) {
+        showAlert('Disqualified', 'You switched tabs again. The exam is now submitting automatically.', 'DANGER');
+        // Log violation
+        fetch('/api/exam/log_activity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'TAB_SWITCH', examId, examTitle: exam.title, message: 'DISQUALIFIED: Second tab switch violation.' })
+        });
+        submitExam(); // Auto submit
+      }
     }
-  }, [submitting]);
+  }, [submitting, exam, examId, showAlert, submitExam]);
 
   useEffect(() => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -94,9 +117,17 @@ export default function ExamPlayPage({ params }) {
           codingAnswers
         })
       });
+
+      // Log activity
+      fetch('/api/exam/log_activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'SUBMITTED', examId, examTitle: exam.title, message: 'Exam successfully submitted for evaluation.' })
+      });
+
       router.push('/dashboard/results');
     } catch (err) {
-      alert('Error submitting exam.');
+      showAlert('Submission Error', 'Error submitting exam. Please check your connection and try again.', 'DANGER');
       setSubmitting(false); // Let them try again
     }
   };

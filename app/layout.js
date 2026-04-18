@@ -1,5 +1,7 @@
 import { Archivo, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { ModalProvider } from '@/lib/contexts/ModalContext';
+import Modal from '@/components/Modal';
 
 const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo" });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk" });
@@ -20,7 +22,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${archivo.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
       <body>
-        {children}
+        <ModalProvider>
+          {children}
+          <Modal />
+        </ModalProvider>
       </body>
     </html>
   );

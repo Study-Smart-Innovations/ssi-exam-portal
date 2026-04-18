@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { CheckCircle, Mail, AlertCircle, RefreshCw } from 'lucide-react';
+import { useModal } from '@/lib/contexts/ModalContext';
 
 export default function SubmissionsTable({ initialSubmissions }) {
   const [submissions, setSubmissions] = useState(initialSubmissions);
   const [loadingAction, setLoadingAction] = useState(null);
+  const { showAlert } = useModal();
 
   const handleAction = async (subId, action) => {
     setLoadingAction(`${action}-${subId}`);
@@ -22,7 +24,7 @@ export default function SubmissionsTable({ initialSubmissions }) {
 
       if (!res.ok) {
         const error = await res.json();
-        alert(`Error: ${error.error || error.message}`);
+        showAlert('Error', error.error || error.message || 'Operation failed', 'DANGER');
         return;
       }
 
@@ -41,7 +43,7 @@ export default function SubmissionsTable({ initialSubmissions }) {
       }));
 
     } catch (err) {
-      alert(`Request failed: ${err.message}`);
+      showAlert('Error', err.message, 'DANGER');
     } finally {
       setLoadingAction(null);
     }

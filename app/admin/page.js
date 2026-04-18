@@ -1,5 +1,6 @@
 import clientPromise from '@/lib/mongodb';
 import { Users, BookOpen, CheckCircle, Clock } from 'lucide-react';
+import ActivityLog from './ActivityLog';
 
 export default async function AdminDashboardOverview() {
   const client = await clientPromise;
@@ -39,11 +40,7 @@ export default async function AdminDashboardOverview() {
         })}
       </div>
 
-      <div className="mt-8 glass-panel" style={{ padding: '1.5rem', minHeight: '300px' }}>
-         <h3>Recent Activity</h3>
-         <p style={{ color: 'var(--border)' }}>Activity logs and ISO audit trails will appear here.</p>
-         {/* Implement activity log rendering here based on db logs collection in future */}
-      </div>
+      <ActivityLog />
     </div>
   );
 }

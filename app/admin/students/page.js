@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { UserPlus, Trash2 } from 'lucide-react';
+import { useModal } from '@/lib/contexts/ModalContext';
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { showAlert, showConfirm } = useModal();
 
   const fetchStudents = async () => {
     try {
@@ -28,14 +30,20 @@ export default function StudentsPage() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this student? All their exam data will be lost.')) return;
+    const confirmed = await showConfirm(
+      'Remove Student', 
+      'Are you sure you want to remove this student? All their exam history, attempts, and associated data will be permanently deleted. This action cannot be reversed.', 
+      'DANGER'
+    );
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/admin/students/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete student');
       setStudents(students.filter(s => s._id !== id));
+      showAlert('Success', 'Student has been removed successfully.', 'SUCCESS');
     } catch (err) {
-      alert(err.message);
+      showAlert('Error', err.message, 'DANGER');
     }
   };
 
