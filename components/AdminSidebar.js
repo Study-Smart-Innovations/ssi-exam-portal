@@ -26,7 +26,7 @@ export default function AdminSidebar() {
   return (
     <aside className="sidebar">
       <div className="flex flex-col items-center mb-6">
-        <Image src="/logo.jpeg" alt="Logo" width={150} height={60} style={{ objectFit: 'contain' }} />
+        <Image src="/logo.jpeg" alt="Logo" width={150} height={60} style={{ objectFit: 'contain' }} priority />
         <h3 className="mt-4" style={{ fontSize: '1rem', color: 'var(--primary)' }}>Admin Portal</h3>
       </div>
       

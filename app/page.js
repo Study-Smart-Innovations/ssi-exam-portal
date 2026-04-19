@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Code, GraduationCap, ShieldCheck, ChevronRight, Lock, User, Terminal } from 'lucide-react';
+import { Code, GraduationCap, ShieldCheck, ChevronRight, Lock, User, Terminal, Eye, EyeOff } from 'lucide-react';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function LandingPage() {
   const [role, setRole] = useState('student');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -145,14 +146,34 @@ export default function LandingPage() {
 
                 <div className="input-group-v2">
                   <label>Password</label>
-                  <div className="input-wrapper">
+                  <div className="input-wrapper relative flex items-center">
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      style={{ paddingRight: '2.5rem' }}
                     />
+                    <button 
+                      type="button"
+                      className="password-toggle-v2"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '0.75rem',
+                        background: 'none',
+                        border: 'none',
+                        color: 'white',
+                        opacity: 0.5,
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
 
@@ -388,6 +409,13 @@ export default function LandingPage() {
           text-transform: uppercase;
           letter-spacing: 0.05em;
           opacity: 0.5;
+        }
+
+        .input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          width: 100%;
         }
 
         .btn-full {

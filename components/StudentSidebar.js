@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Award, LogOut, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, Award, LogOut, LifeBuoy, Settings } from 'lucide-react';
 import Image from 'next/image';
 
 export default function StudentSidebar() {
@@ -18,12 +18,13 @@ export default function StudentSidebar() {
     { name: 'My Exams', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Results & Certificates', path: '/dashboard/results', icon: Award },
     { name: 'Support', path: '/support', icon: LifeBuoy },
+    { name: 'Settings', path: '/dashboard/settings', icon: Settings },
   ];
 
   return (
     <aside className="sidebar">
       <div className="flex flex-col items-center mb-6">
-        <Image src="/logo.jpeg" alt="Logo" width={150} height={60} style={{ objectFit: 'contain' }} />
+        <Image src="/logo.jpeg" alt="Logo" width={150} height={60} style={{ objectFit: 'contain' }} priority />
         <h3 className="mt-4" style={{ fontSize: '1rem', color: 'var(--primary)' }}>Student Portal</h3>
       </div>
       
