@@ -21,7 +21,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${archivo.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
-      <body>
+      <body suppressHydrationWarning>
         <ModalProvider>
           {children}
           <Modal />
