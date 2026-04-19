@@ -3,6 +3,7 @@ import StudentSidebar from '@/components/StudentSidebar';
 import AdminSidebar from '@/components/AdminSidebar';
 import SupportForm from './SupportForm';
 import StandaloneSupport from './StandaloneSupport';
+import MobileHeader from '@/components/MobileHeader';
 
 export const metadata = {
   title: 'Support | SSI Exam Portal',
@@ -28,7 +29,8 @@ export default async function SupportPage() {
     return (
       <div className="dashboard-layout">
         <SidebarComponent />
-        <main className="main-content" style={{ padding: '1.5rem 2rem' }}>
+        <MobileHeader sidebar={SidebarComponent} />
+        <main className="main-content mobile-padded" style={{ padding: '1.5rem 2rem' }}>
           {content}
         </main>
       </div>

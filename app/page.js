@@ -177,7 +177,7 @@ export default function LandingPage() {
       <style jsx>{`
         .landing-wrapper {
           min-height: 100vh;
-          width: 100vw;
+          width: 100%;
           position: relative;
           background-color: var(--background);
           display: flex;
@@ -185,7 +185,7 @@ export default function LandingPage() {
           align-items: center;
           justify-content: center;
           padding: 2rem;
-          overflow: hidden;
+          overflow-x: hidden;
         }
 
         .bg-glow {
@@ -436,6 +436,29 @@ export default function LandingPage() {
             padding-top: 6rem;
             overflow-y: auto;
             justify-content: flex-start;
+            height: 100vh;
+            -webkit-overflow-scrolling: touch;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .hero-title {
+            font-size: 2.25rem;
+          }
+          .hero-subtitle {
+            font-size: 1rem;
+          }
+          .hero-features {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+          }
+          .auth-card-premium {
+            padding: 1.5rem;
+          }
+          .navbar {
+            width: calc(100% - 1.5rem);
+            padding: 0.6rem 1rem;
           }
         }
       `}</style>

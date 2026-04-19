@@ -51,12 +51,12 @@ export default function StudentsPage() {
 
   return (
     <div className="relative">
-      <div className="flex justify-between items-center mb-6">
+      <div className="admin-header">
         <div>
           <h1 className="text-gradient">Student Management</h1>
-          <p style={{ color: 'var(--border)' }}>Manage enrolled students and their exam attempts.</p>
+          <p className="hidden-mobile" style={{ color: 'var(--border)' }}>Manage enrolled students and their exam attempts.</p>
         </div>
-        <Link href="/admin/students/new" className="btn btn-primary">
+        <Link href="/admin/students/new" className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
           <UserPlus size={18} />
           Add Student
         </Link>

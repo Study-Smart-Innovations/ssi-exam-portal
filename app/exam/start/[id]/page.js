@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, CheckCircle, AlertCircle } from 'lucide-react';
+import { Camera, CheckCircle, AlertCircle, Monitor, AlertOctagon, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ExamStartPage({ params }) {
   const unwrappedParams = use(params);
@@ -19,8 +20,23 @@ export default function ExamStartPage({ params }) {
   const [error, setError] = useState('');
   const [examState, setExamState] = useState(null); // Will hold exam rules, etc. fetched from API
   const [agreed, setAgreed] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   
+  // Device detection
   useEffect(() => {
+    const checkDevice = () => {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isSmallScreen = window.innerWidth < 1024;
+      setIsMobileDevice(isMobile || isSmallScreen);
+    };
+
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
+  useEffect(() => {
+    if (isMobileDevice) return;
     // Fetch Exam config (rules, duration, title)
     const fetchExam = async () => {
       try {
@@ -134,7 +150,107 @@ export default function ExamStartPage({ params }) {
     }
   };
 
-  if (!examState) return <div className="container mt-8">Loading Exam Context...</div>;
+  if (isMobileDevice) {
+    return (
+      <div className="restriction-overlay">
+        <div className="glass-panel restriction-card">
+           <div className="icon-badge">
+             <Monitor size={48} />
+           </div>
+           
+           <h1 className="restriction-title">Desktop Required</h1>
+           
+           <div className="alert-tag">
+             <AlertOctagon size={16} />
+             <span>RESTRICTED ACCESS</span>
+           </div>
+           
+           <p className="restriction-text">
+             For security and technical reasons, assessments must be completed on a <strong>Laptop or Desktop</strong> environment. 
+             Mobile devices and tablets are not supported for this exam.
+           </p>
+
+           <Link href="/dashboard" className="btn btn-secondary back-btn">
+             <ArrowLeft size={18} /> Back to Dashboard
+           </Link>
+        </div>
+
+        <style jsx>{`
+          .restriction-overlay {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1.5rem;
+            background: var(--background);
+          }
+          .restriction-card {
+            width: 100%;
+            max-width: 500px;
+            padding: 3rem;
+            border-radius: 2rem;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+          }
+          .icon-badge {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            padding: 1.5rem;
+            border-radius: 50%;
+            width: fit-content;
+            margin: 0 auto 1.5rem;
+          }
+          .restriction-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--foreground);
+            font-family: var(--font-space-grotesk);
+          }
+          .alert-tag {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--danger);
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+          }
+          .restriction-text {
+            color: var(--border);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+          }
+          :global(.back-btn) {
+            width: 100%;
+            text-decoration: none;
+          }
+
+          @media (max-width: 640px) {
+            .restriction-card {
+              padding: 2rem 1.5rem;
+              border-radius: 1.5rem;
+            }
+            .restriction-title {
+              font-size: 1.5rem;
+            }
+            .restriction-text {
+              font-size: 1rem;
+              margin-bottom: 1.5rem;
+            }
+            .icon-badge {
+              padding: 1rem;
+              margin-bottom: 1rem;
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  if (!examState) return <div className="container mt-8 text-center">Loading Exam Context...</div>;
 
   return (
     <div className="container" style={{ maxWidth: '800px', marginTop: '3rem' }}>

@@ -109,8 +109,8 @@ export default function ActivityLog() {
   };
 
   return (
-    <div className="mt-8 glass-panel" style={{ padding: '1.5rem', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
-      <div className="flex justify-between" style={{ alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+    <div className="activity-container glass-panel">
+      <div className="activity-header">
         <div>
           <h3 className="mb-2">Recent Activity & Audit Trail</h3>
           <div className="flex items-center gap-4">
@@ -162,55 +162,38 @@ export default function ActivityLog() {
               const borderColor = isSelected ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)';
 
               return (
-                <div key={activity._id || idx} style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '1rem', 
-                  padding: '1rem', 
-                  background: isSelected ? 'rgba(239, 68, 68, 0.05)' : 'rgba(255,255,255,0.02)', 
-                  borderTop: `1px solid ${borderColor}`,
-                  borderRight: `1px solid ${borderColor}`,
-                  borderBottom: `1px solid ${borderColor}`,
-                  borderLeft: customStyles.borderLeft, // Override specific side
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: '0.5rem',
-                  transition: 'background 0.2s ease'
-                }}>
-                  <input 
-                    type="checkbox" 
-                    style={{ width: 'auto' }} 
-                    checked={isSelected} 
-                    onChange={() => handleSelectOne(activity._id)} 
-                  />
-                  
-                  <div style={{ 
-                    background: 'rgba(255,255,255,0.05)', 
-                    padding: '0.6rem', 
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    {getIcon(activity.type)}
+                <div key={activity._id || idx} className={`activity-row ${isSelected ? 'selected' : ''}`} style={customStyles}>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="checkbox" 
+                      style={{ width: 'auto' }} 
+                      checked={isSelected} 
+                      onChange={() => handleSelectOne(activity._id)} 
+                    />
+                    
+                    <div className="icon-wrapper">
+                      {getIcon(activity.type)}
+                    </div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                  
+                  <div className="activity-info">
+                    <div className="activity-title">
                       <span style={{ color: customStyles.color }}>{activity.studentName}</span> 
-                      <span style={{ fontSize: '0.75rem', color: 'var(--border)', fontWeight: 400, marginLeft: '4px' }}>
+                      <span className="student-email">
                         ({activity.studentEmail})
                       </span>
                       {activity.type === 'STARTED' && ' started '}
                       {activity.type === 'TAB_SWITCH' && ' triggered a warning during '}
                       {activity.type === 'SUBMITTED' && ' submitted '}
-                      <span style={{ color: 'var(--accent)' }}>{activity.examTitle}</span>
+                      <span className="exam-tag">{activity.examTitle}</span>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--border)' }}>
+                    <div className="activity-msg">
                       {activity.message}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right', minWidth: '100px' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 500 }}>{time}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--border)' }}>{date}</div>
+                  <div className="activity-timestamp">
+                    <div className="time">{time}</div>
+                    <div className="date">{date}</div>
                   </div>
                 </div>
               );
@@ -242,6 +225,102 @@ export default function ActivityLog() {
           </button>
         </div>
       )}
+      <style jsx>{`
+        .activity-container {
+          margin-top: 2rem;
+          padding: 1.5rem;
+          min-height: 400px;
+          display: flex;
+          flex-direction: column;
+        }
+        .activity-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 1.5rem;
+        }
+        .refresh-btn {
+          background: var(--secondary);
+          border: 1px solid var(--border);
+          color: white;
+          padding: 0.4rem;
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+        }
+        .activity-row {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: var(--radius-md);
+          margin-bottom: 0.5rem;
+          transition: background 0.2s ease;
+        }
+        .activity-row.selected {
+          background: rgba(239, 68, 68, 0.05);
+          border-color: rgba(239, 68, 68, 0.2);
+        }
+        .icon-wrapper {
+          background: rgba(255, 255, 255, 0.05);
+          padding: 0.6rem;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .activity-info {
+          flex: 1;
+        }
+        .activity-title {
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+        .student-email {
+          font-size: 0.75rem;
+          color: var(--border);
+          font-weight: 400;
+          margin-left: 4px;
+        }
+        .exam-tag {
+          color: var(--accent);
+        }
+        .activity-msg {
+          font-size: 0.75rem;
+          color: var(--border);
+        }
+        .activity-timestamp {
+          text-align: right;
+          min-width: 100px;
+        }
+        .time { font-size: 0.8rem; font-weight: 500; }
+        .date { font-size: 0.7rem; color: var(--border); }
+
+        @media (max-width: 768px) {
+          .activity-header {
+            flex-direction: column;
+            gap: 1rem;
+          }
+          .activity-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+          }
+          .activity-timestamp {
+            text-align: left;
+            width: 100%;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .icon-wrapper {
+            padding: 0.4rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }

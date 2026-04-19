@@ -1,6 +1,7 @@
-import AdminSidebar from '@/components/AdminSidebar';
 import { requireAuth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import MobileHeader from '@/components/MobileHeader';
+import AdminSidebar from '@/components/AdminSidebar';
 
 export const metadata = {
   title: 'Admin Dashboard | Study Smart Innovations',
@@ -16,7 +17,8 @@ export default async function AdminLayout({ children }) {
   return (
     <div className="dashboard-layout">
       <AdminSidebar />
-      <main className="main-content">
+      <MobileHeader sidebar={AdminSidebar} />
+      <main className="main-content mobile-padded">
         {children}
       </main>
     </div>

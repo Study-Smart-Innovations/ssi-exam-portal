@@ -130,13 +130,14 @@ export default function AdminHiddenLoginPage() {
       <style jsx>{`
         .landing-wrapper {
           min-height: 100vh;
-          width: 100vw;
+          width: 100%;
           position: relative;
           background-color: var(--background);
           display: flex;
           align-items: center;
           justify-content: center;
-          overflow: hidden;
+          padding: 1.5rem;
+          overflow-x: hidden;
         }
 
         .bg-glow {
@@ -228,6 +229,19 @@ export default function AdminHiddenLoginPage() {
           font-size: 0.8125rem;
           margin-bottom: 1.5rem;
           text-align: center;
+        }
+
+        @media (max-width: 640px) {
+          .auth-card-premium {
+            width: 100% !important;
+            padding: 1.5rem;
+          }
+          .landing-wrapper {
+            padding: 1rem;
+            overflow-y: auto;
+            height: 100vh;
+            -webkit-overflow-scrolling: touch;
+          }
         }
       `}</style>
     </main>

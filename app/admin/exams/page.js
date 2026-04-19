@@ -57,12 +57,12 @@ export default function ExamsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="admin-header">
         <div>
           <h1 className="text-gradient">Exam Management</h1>
-          <p style={{ color: 'var(--border)' }}>Create and configure exams for various batches.</p>
+          <p className="hidden-mobile" style={{ color: 'var(--border)' }}>Create and configure exams for various batches.</p>
         </div>
-        <Link href="/admin/exams/new" className="btn btn-primary">
+        <Link href="/admin/exams/new" className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
           <Plus size={18} />
           Create Exam
         </Link>

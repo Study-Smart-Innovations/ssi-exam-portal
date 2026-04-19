@@ -11,7 +11,7 @@ export default function StandaloneSupport({ children }) {
       <style jsx>{`
         .support-wrapper {
           min-height: 100vh;
-          width: 100vw;
+          width: 100%;
           background-color: var(--background);
           padding: 1.5rem 2rem;
           position: relative;
@@ -33,6 +33,16 @@ export default function StandaloneSupport({ children }) {
 
         .bg-glow-1 { top: -100px; right: -100px; background: var(--primary); }
         .bg-glow-2 { bottom: -100px; left: -100px; background: var(--accent); }
+
+        @media (max-width: 768px) {
+          .support-wrapper {
+            padding: 4rem 1.5rem;
+            align-items: flex-start;
+            height: 100vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+        }
       `}</style>
     </main>
   );

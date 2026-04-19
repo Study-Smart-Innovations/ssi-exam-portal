@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { Clock, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, AlertTriangle, ChevronLeft, ChevronRight, Monitor, AlertOctagon, ArrowLeft } from 'lucide-react';
 import CameraProctor from '@/components/CameraProctor';
 import { useModal } from '@/lib/contexts/ModalContext';
 import { useRef } from 'react';
+import Link from 'next/link';
 
 export default function ExamPlayPage({ params }) {
   const unwrappedParams = use(params);
@@ -24,10 +25,25 @@ export default function ExamPlayPage({ params }) {
   
   const [warnings, setWarnings] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const lastLogTimestampRef = useRef(0);
+
+  // Device detection
+  useEffect(() => {
+    const checkDevice = () => {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isSmallScreen = window.innerWidth < 1024;
+      setIsMobileDevice(isMobile || isSmallScreen);
+    };
+
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
 
   // Fetch exam data to play (including questions without answers)
   useEffect(() => {
+    if (isMobileDevice) return;
     try {
       if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch((err) => {
@@ -143,6 +159,106 @@ export default function ExamPlayPage({ params }) {
   };
 
 
+  if (isMobileDevice) {
+    return (
+      <div className="restriction-overlay">
+        <div className="glass-panel restriction-card">
+           <div className="icon-badge">
+             <Monitor size={48} />
+           </div>
+           
+           <h1 className="restriction-title">Desktop Required</h1>
+           
+           <div className="alert-tag">
+             <AlertOctagon size={16} />
+             <span>RESTRICTED ACCESS</span>
+           </div>
+           
+           <p className="restriction-text">
+             For security and technical reasons, assessments must be completed on a <strong>Laptop or Desktop</strong> environment. 
+             Mobile devices and tablets are not supported for this exam.
+           </p>
+
+           <Link href="/dashboard" className="btn btn-secondary back-btn">
+             <ArrowLeft size={18} /> Back to Dashboard
+           </Link>
+        </div>
+
+        <style jsx>{`
+          .restriction-overlay {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1.5rem;
+            background: var(--background);
+          }
+          .restriction-card {
+            width: 100%;
+            max-width: 500px;
+            padding: 3rem;
+            border-radius: 2rem;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+          }
+          .icon-badge {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            padding: 1.5rem;
+            border-radius: 50%;
+            width: fit-content;
+            margin: 0 auto 1.5rem;
+          }
+          .restriction-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--foreground);
+            font-family: var(--font-space-grotesk);
+          }
+          .alert-tag {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--danger);
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+          }
+          .restriction-text {
+            color: var(--border);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+          }
+          :global(.back-btn) {
+            width: 100%;
+            text-decoration: none;
+          }
+
+          @media (max-width: 640px) {
+            .restriction-card {
+              padding: 2rem 1.5rem;
+              border-radius: 1.5rem;
+            }
+            .restriction-title {
+              font-size: 1.5rem;
+            }
+            .restriction-text {
+              font-size: 1rem;
+              margin-bottom: 1.5rem;
+            }
+            .icon-badge {
+              padding: 1rem;
+              margin-bottom: 1rem;
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   if (!exam || combinedQuestions.length === 0) return <div className="container mt-8 text-center">Loading Exam Environment...</div>;
 
   const currentQ = combinedQuestions[currentIdx];
@@ -156,22 +272,26 @@ export default function ExamPlayPage({ params }) {
   return (
     <div className="flex flex-col" style={{ minHeight: '100vh' }}>
       {/* Top Navbar */}
-      <header style={{ padding: '1rem 2rem', background: 'var(--secondary)', borderBottom: `1px solid ${warnings > 0 ? 'var(--danger)' : 'var(--border)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.25rem', margin: 0 }}>{exam.title}</h2>
-        <div className="flex items-center gap-6">
-          {warnings > 0 && <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}><AlertTriangle size={18} style={{ display: 'inline', verticalAlign: 'text-bottom' }} /> Warning: {warnings}/2</span>}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.25rem', fontWeight: 'bold', color: timeLeft < 300 ? 'var(--danger)' : 'var(--success)' }}>
-            <Clock /> {formatTime(timeLeft)}
+      <header className="exam-header">
+        <h2 className="exam-title">{exam.title}</h2>
+        <div className="flex items-center gap-3 md:gap-6">
+          {warnings > 0 && <span className="warning-text"><AlertTriangle size={18} /> <span className="hidden-mobile">Warning: </span>{warnings}/2</span>}
+          <div className="timer-display" style={{ color: timeLeft < 300 ? 'var(--danger)' : 'var(--success)' }}>
+            <Clock size={20} /> <span>{formatTime(timeLeft)}</span>
           </div>
-          <button className="btn btn-primary" onClick={submitExam} disabled={submitting}>
-            {submitting ? 'Submitting...' : 'Finish & Submit'}
+          <button className="btn btn-primary btn-sm" onClick={submitExam} disabled={submitting}>
+            {submitting ? '...' : (
+              <>
+                <span className="hidden-mobile">Finish & </span>Submit
+              </>
+            )}
           </button>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="exam-body">
         {/* Left Sidebar (Navigation) */}
-        <aside style={{ width: '250px', background: 'var(--background)', borderRight: '1px solid var(--border)', overflowY: 'auto', padding: '1rem' }}>
+        <aside className="exam-sidebar">
            <h4 className="mb-4">Question List</h4>
            
            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
@@ -205,9 +325,9 @@ export default function ExamPlayPage({ params }) {
         </aside>
 
         {/* Main Content Area */}
-        <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+        <main className="exam-main">
           {currentQ ? (
-            <div className="glass-panel" style={{ padding: '2rem', minHeight: '60vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="glass-panel exam-question-card">
                <div className="flex justify-between items-center mb-6">
                  <div>
                    <h3 className="mb-1">Question {currentIdx + 1}</h3>
@@ -242,9 +362,9 @@ export default function ExamPlayPage({ params }) {
                  </div>
                ) : (
                  <textarea 
-                   rows="12" 
+                   rows="15" className="coding-editor" 
                    placeholder="Write your code here..." 
-                   style={{ fontFamily: 'monospace', padding: '1.5rem', background: '#0a0a0c', border: '1px solid var(--border)', fontSize: '1rem' }}
+                   
                    value={codingAnswers[currentQ.id] || ''}
                    onChange={(e) => setCodingAnswers(p => ({ ...p, [currentQ.id]: e.target.value }))}
                  />
@@ -252,10 +372,10 @@ export default function ExamPlayPage({ params }) {
                
                <div className="mt-auto flex justify-between" style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border)' }}>
                   <button className="btn btn-secondary" onClick={() => setCurrentIdx(p => (p - 1 + combinedQuestions.length) % combinedQuestions.length)}>
-                    <ChevronLeft /> Previous
+                    <ChevronLeft size={18} /> <span className="hidden-mobile">Previous</span>
                   </button>
                   <button className="btn btn-primary" onClick={() => setCurrentIdx(p => (p + 1) % combinedQuestions.length)}>
-                    Next Question <ChevronRight />
+                    <span className="hidden-mobile">Next Question</span> <ChevronRight size={18} />
                   </button>
                </div>
             </div>
@@ -266,6 +386,113 @@ export default function ExamPlayPage({ params }) {
       </div>
 
       <CameraProctor />
+
+      <style jsx>{`
+        .exam-header {
+          padding: 1rem 2rem;
+          background: var(--secondary);
+          border-bottom: 1px solid ${warnings > 0 ? 'var(--danger)' : 'var(--border)'};
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          z-index: 100;
+        }
+
+        .exam-title {
+          font-size: 1.25rem;
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .warning-text {
+          color: var(--danger);
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+        }
+
+        .timer-display {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 1.25rem;
+          font-weight: bold;
+        }
+
+        .exam-body {
+          display: flex;
+          flex-direction: row;
+          flex: 1;
+          height: calc(100vh - 70px);
+          overflow: hidden;
+        }
+
+        .exam-sidebar {
+          width: 250px;
+          background: var(--background);
+          border-right: 1px solid var(--border);
+          overflow-y: auto;
+          padding: 1.5rem;
+        }
+
+        .exam-main {
+          flex: 1;
+          padding: 2rem;
+          overflow-y: auto;
+          background: rgba(0, 0, 0, 0.2);
+        }
+
+        .exam-question-card {
+          padding: 2.5rem;
+          min-height: 60vh;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .coding-editor {
+          font-family: 'Space Mono', 'Courier New', monospace;
+          padding: 1.5rem;
+          background: #0a0a0c;
+          border: 1px solid var(--border);
+          font-size: 1rem;
+          color: #e2e8f0;
+          line-height: 1.5;
+          border-radius: var(--radius-md);
+          resize: vertical;
+        }
+
+        @media (max-width: 768px) {
+          .exam-header {
+            padding: 0.75rem 1rem;
+          }
+          .exam-title {
+            font-size: 1rem;
+          }
+          .timer-display {
+            font-size: 1rem;
+          }
+          .exam-body {
+            flex-direction: column;
+            overflow-y: auto;
+          }
+          .exam-sidebar {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+            height: auto;
+            max-height: 200px;
+          }
+          .exam-main {
+            padding: 1rem;
+          }
+          .exam-question-card {
+            padding: 1.5rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }

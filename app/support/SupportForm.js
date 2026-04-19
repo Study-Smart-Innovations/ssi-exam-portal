@@ -220,6 +220,7 @@ export default function SupportForm({ userRole }) {
           font-weight: 700;
           font-size: 0.95rem;
           transition: 0.2s opacity;
+          word-break: break-all;
         }
 
         :global(.value:hover) { opacity: 0.8; text-decoration: none; }
@@ -263,12 +264,25 @@ export default function SupportForm({ userRole }) {
           .support-title { font-size: 2.5rem; }
         }
 
+        @media (max-width: 640px) {
+          .support-title { font-size: 2rem; }
+          .support-card { padding: 1.5rem; }
+          .contact-item { padding: 1rem; gap: 1rem; }
+          .icon-box { width: 40px; height: 40px; }
+        }
+
         /* In-Dashboard Layout Tweaks */
         .in-dashboard .support-grid {
           gap: 2rem;
         }
         .in-dashboard .support-title {
           font-size: 2.5rem;
+        }
+        
+        @media (max-width: 768px) {
+          .in-dashboard .support-title {
+            font-size: 2rem;
+          }
         }
       `}</style>
     </div>
