@@ -111,24 +111,7 @@ export default function LandingPage() {
                 </div>
               )}
 
-              <div className="role-selector">
-                <button
-                  type="button"
-                  className={`role-btn ${role === 'student' ? 'active' : ''}`}
-                  onClick={() => setRole('student')}
-                >
-                  <User size={16} />
-                  <span>Student</span>
-                </button>
-                <button
-                  type="button"
-                  className={`role-btn ${role === 'admin' ? 'active' : ''}`}
-                  onClick={() => setRole('admin')}
-                >
-                  <Lock size={16} />
-                  <span>Admin</span>
-                </button>
-              </div>
+              {/* Role selector removed - login is student-only here */}
 
               <form onSubmit={handleLogin} className="auth-form-v2">
                 <div className="input-group-v2">
@@ -136,7 +119,7 @@ export default function LandingPage() {
                   <div className="input-wrapper">
                     <input
                       type="email"
-                      placeholder={role === 'admin' ? "admin@studysmart.com" : "student@example.com"}
+                      placeholder="student@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
