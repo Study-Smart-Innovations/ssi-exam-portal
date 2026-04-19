@@ -101,16 +101,25 @@ export async function POST(req) {
 
     if (passed) {
       try {
-        const templatePath = path.join(process.cwd(), 'public', `SSI_${exam.batch}_Course_Certificate.png`);
+        const templatePath = path.join(process.cwd(), 'public', 'template', `SSI_${exam.batch}_Course_Certificate.png`);
         if (fs.existsSync(templatePath)) {
+          const dateString = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
           const svgText = `
-            <svg width="2000" height="1414">
+            <svg width="1536" height="1024">
               <style>
-                .title { fill: #0f172a; font-size: 80px; font-weight: bold; font-family: sans-serif; text-anchor: middle; }
-                .cid { fill: #333333; font-size: 30px; font-family: sans-serif; }
+                .title { fill: #0f172a; font-size: 64px; font-weight: bold; font-family: 'Times New Roman', serif; text-anchor: middle; }
+                .cid { fill: #333333; font-size: 26px; font-family: 'Times New Roman', serif; }
+                .date { fill: #333333; font-size: 26px; font-family: 'Times New Roman', serif; }
               </style>
-              <text x="1000" y="750" class="title">${student.name}</text>
-              <text x="1350" y="1165" class="cid">${certId}</text>
+              
+              <!-- White rectangles to cleanly erase baked-in placeholders from the image pixels -->
+              <rect x="268" y="490" width="1000" height="120" fill="#ffffff" />
+              <rect x="1000" y="800" width="400" height="60" fill="#ffffff" />
+              <rect x="330" y="800" width="450" height="60" fill="#ffffff" />
+
+              <text x="768" y="570" class="title">${student.name}</text>
+              <text x="1005" y="838" class="cid">${certId}</text>
+              <text x="340" y="838" class="date">${dateString}</text>
             </svg>
           `;
 

@@ -31,11 +31,11 @@ export default async function AdminSubmissionsPage() {
   // Serialize objects for client component
   const submissions = rawSubmissions.map(sub => ({
     _id: sub._id.toString(),
-    status: sub.status,
-    score: sub.score,
-    passed: sub.passed,
-    mailSent: sub.mailSent,
-    submittedAt: sub.submittedAt,
+    status: sub.status || 'pending',
+    score: sub.score ?? null,
+    passed: sub.passed ?? null,
+    mailSent: sub.mailSent ?? false,
+    submittedAt: sub.submittedAt || new Date(),
     examTitle: sub.examTitle || sub.exam?.title || 'Unknown Exam',
     studentName: sub.student?.name || 'Unknown Student',
     studentEmail: sub.student?.email || 'No email'

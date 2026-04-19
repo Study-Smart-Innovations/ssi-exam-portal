@@ -28,6 +28,16 @@ export default function ExamPlayPage({ params }) {
 
   // Fetch exam data to play (including questions without answers)
   useEffect(() => {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.warn('Fullscreen request failed:', err.message);
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
+
     const fetchExam = async () => {
       const res = await fetch(`/api/exam/play_data?id=${examId}`);
       const data = await res.json();
@@ -46,6 +56,34 @@ export default function ExamPlayPage({ params }) {
     };
     fetchExam();
   }, [examId, router]);
+
+  const submitExam = useCallback(async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await fetch('/api/exam/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          examId,
+          mcqAnswers,
+          codingAnswers
+        })
+      });
+
+      // Log activity
+      fetch('/api/exam/log_activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'SUBMITTED', examId, examTitle: exam?.title, message: 'Exam successfully submitted for evaluation.' })
+      });
+
+      router.push('/dashboard/results');
+    } catch (err) {
+      showAlert('Submission Error', 'Error submitting exam. Please check your connection and try again.', 'DANGER');
+      setSubmitting(false); // Let them try again
+    }
+  }, [submitting, examId, mcqAnswers, codingAnswers, exam, router, showAlert]);
 
   // Tab switching detection
   const handleVisibilityChange = useCallback(() => {
@@ -104,33 +142,6 @@ export default function ExamPlayPage({ params }) {
     setMarkedForReview(newSet);
   };
 
-  const submitExam = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      await fetch('/api/exam/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          examId,
-          mcqAnswers,
-          codingAnswers
-        })
-      });
-
-      // Log activity
-      fetch('/api/exam/log_activity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'SUBMITTED', examId, examTitle: exam.title, message: 'Exam successfully submitted for evaluation.' })
-      });
-
-      router.push('/dashboard/results');
-    } catch (err) {
-      showAlert('Submission Error', 'Error submitting exam. Please check your connection and try again.', 'DANGER');
-      setSubmitting(false); // Let them try again
-    }
-  };
 
   if (!exam || combinedQuestions.length === 0) return <div className="container mt-8 text-center">Loading Exam Environment...</div>;
 

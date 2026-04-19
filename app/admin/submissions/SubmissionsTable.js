@@ -12,9 +12,10 @@ export default function SubmissionsTable({ initialSubmissions }) {
   const handleAction = async (subId, action) => {
     setLoadingAction(`${action}-${subId}`);
     try {
-      const endpoint = action === 'evaluate' 
-        ? '/api/admin/submissions/evaluate' 
-        : '/api/admin/submissions/issue';
+      let endpoint;
+      if (action === 'evaluate') endpoint = '/api/admin/submissions/evaluate';
+      else if (action === 'issue') endpoint = '/api/admin/submissions/issue';
+      else if (action === 'reset') endpoint = '/api/admin/submissions/reset';
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -37,6 +38,8 @@ export default function SubmissionsTable({ initialSubmissions }) {
              return { ...s, status: 'evaluated', passed: data.passed, score: data.score };
           } else if (action === 'issue') {
              return { ...s, mailSent: true };
+          } else if (action === 'reset') {
+             return { ...s, status: 'pending', passed: null, score: null, mailSent: false };
           }
         }
         return s;
@@ -120,25 +123,45 @@ export default function SubmissionsTable({ initialSubmissions }) {
                         </button>
                       )}
                       {evaluated && !sub.mailSent && (
-                        <button 
-                           className={`btn`}
-                           style={{ 
-                             padding: '0.4rem 1rem', 
-                             fontSize: '0.8rem', 
-                             background: sub.passed ? 'var(--success)' : 'transparent', 
-                             border: sub.passed ? 'none' : '1px solid var(--border)',
-                             color: 'white',
-                             cursor: 'pointer'
-                           }}
-                           onClick={() => handleAction(sub._id, 'issue')}
-                           disabled={loadingAction === `issue-${sub._id}`}
-                        >
-                           {loadingAction === `issue-${sub._id}` ? <RefreshCw size={14} className="animate-spin" style={{ display: 'inline', marginRight: '4px' }} /> : (sub.passed ? <Mail size={14} style={{ display: 'inline', marginRight: '4px' }}/> : <AlertCircle size={14} style={{ display: 'inline', marginRight: '4px' }}/>)}
-                           {sub.passed ? 'Issue Certificate' : 'Notify Failure'}
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <button 
+                             className={`btn`}
+                             style={{ 
+                               padding: '0.4rem 1rem', 
+                               fontSize: '0.8rem', 
+                               background: sub.passed ? 'var(--success)' : 'transparent', 
+                               border: sub.passed ? 'none' : '1px solid var(--border)',
+                               color: 'white',
+                               cursor: 'pointer'
+                             }}
+                             onClick={() => handleAction(sub._id, 'issue')}
+                             disabled={loadingAction === `issue-${sub._id}`}
+                          >
+                             {loadingAction === `issue-${sub._id}` ? <RefreshCw size={14} className="animate-spin" style={{ display: 'inline', marginRight: '4px' }} /> : (sub.passed ? <Mail size={14} style={{ display: 'inline', marginRight: '4px' }}/> : <AlertCircle size={14} style={{ display: 'inline', marginRight: '4px' }}/>)}
+                             {sub.passed ? 'Issue Certificate' : 'Notify Failure'}
+                          </button>
+                          <button 
+                             className="btn"
+                             style={{ padding: '0.4rem 1rem', fontSize: '0.8rem', background: 'transparent', border: '1px solid var(--border)', color: 'var(--accent)', cursor: 'pointer' }}
+                             onClick={() => handleAction(sub._id, 'reset')}
+                             disabled={loadingAction === `reset-${sub._id}`}
+                          >
+                             {loadingAction === `reset-${sub._id}` ? '...' : (sub.passed ? 'Reissue' : 'Re-Evaluate')}
+                          </button>
+                        </div>
                       )}
                       {evaluated && sub.mailSent && (
-                        <span style={{ color: 'var(--success)', fontSize: '0.85rem' }}>✓ Email Sent</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ color: 'var(--success)', fontSize: '0.85rem' }}>✓ Email Sent</span>
+                          <button 
+                             className="btn"
+                             style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: 'transparent', border: '1px solid var(--border)', color: 'var(--accent)', cursor: 'pointer' }}
+                             onClick={() => handleAction(sub._id, 'reset')}
+                             disabled={loadingAction === `reset-${sub._id}`}
+                          >
+                             {loadingAction === `reset-${sub._id}` ? '...' : 'Reissue'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </td>

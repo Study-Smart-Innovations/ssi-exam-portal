@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, CheckCircle } from 'lucide-react';
+import { Camera, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ExamStartPage({ params }) {
   const unwrappedParams = use(params);
@@ -18,6 +18,7 @@ export default function ExamStartPage({ params }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [examState, setExamState] = useState(null); // Will hold exam rules, etc. fetched from API
+  const [agreed, setAgreed] = useState(false);
   
   useEffect(() => {
     // Fetch Exam config (rules, duration, title)
@@ -81,11 +82,22 @@ export default function ExamStartPage({ params }) {
 
   const proceedToExam = async () => {
     if (!snapTaken) return;
+    
+    // Open window synchronously to bypass async popup blockers
+    const popupWin = window.open('about:blank', '_blank', `width=${window.screen.availWidth},height=${window.screen.availHeight},fullscreen=yes`);
+    
+    if (!popupWin || popupWin.closed || typeof popupWin.closed === 'undefined') {
+        setError('⚠️ Popup blocked! Please check your URL address bar, click the popup-blocker icon, select "Always allow pop-ups for this site", and click Start again.');
+        return;
+    }
+    
+    // Native loader while background tasks finish
+    popupWin.document.write('<body style="background:#0f172a;color:white;display:flex;align-items:center;justify-content:center;font-family:sans-serif;height:100vh;margin:0;"><h2>Initializing Secure Exam Environment...</h2></body>');
+    
     setLoading(true);
     try {
       const snapData = canvasRef.current.toDataURL('image/jpeg');
       
-      // We will save this snap indicating start of exam
       const res = await fetch('/api/exam/begin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,7 +106,6 @@ export default function ExamStartPage({ params }) {
       
       if (!res.ok) throw new Error("Failed to initialize exam session.");
 
-      // Log activity
       await fetch('/api/exam/log_activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,14 +117,18 @@ export default function ExamStartPage({ params }) {
         })
       });
       
-      // Stop camera before navigating
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
       
-      router.push(`/exam/play/${examId}`);
+      // Safely navigate the full-screen window to the player
+      popupWin.location.href = `/exam/play/${examId}`;
+      
+      // Redirect start page to avoid double instances
+      router.push('/dashboard/results');
     } catch (err) {
+      popupWin.close();
       setError(err.message);
       setLoading(false);
     }
@@ -128,12 +143,22 @@ export default function ExamStartPage({ params }) {
 
       <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
         <h3 className="mb-4" style={{ color: 'var(--danger)' }}>⚠️ Important Guidelines (CRITICAL)</h3>
-        <ul className="flex flex-col gap-2 mb-4" style={{ paddingLeft: '1.5rem', color: 'var(--foreground)' }}>
+        
+        <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid var(--accent)', padding: '1.5rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+          <h4 style={{ color: 'var(--accent)', marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+             <AlertCircle size={20} /> Action Required: Browser Permissions
+          </h4>
+          <p style={{ fontSize: '1rem', color: 'var(--foreground)' }}>
+             You <strong>must</strong> grant this site access to your <strong>Camera</strong> and you must also <strong>allow Pop-ups and Redirects</strong>! If the exam window fails to open, look for a blocked pop-up icon in your URL address bar to immediately allow it.
+          </p>
+        </div>
+
+        <ul className="flex flex-col gap-3 mb-4" style={{ paddingLeft: '1.5rem', color: 'var(--foreground)' }}>
           {examState.rules?.map((rule, idx) => (
              <li key={idx}>{rule}</li>
           ))}
-          <li><strong>Proctoring:</strong> Your camera must remain ON. A snapshot of your face and Government ID is required right now.</li>
-          <li><strong>Anti-Cheat:</strong> If you change tabs or switch windows during the exam, you will receive ONE warning. A second switch will immediately disqualify you.</li>
+          <li><strong>Proctoring:</strong> Your camera must remain ON. You must hold an <strong>original Government ID (Aadhaar Card, Voter ID, PAN Card, College ID, or Library Card with an image)</strong> next to your face for the snapshot right now.</li>
+          <li><strong>Anti-Cheat:</strong> The exam portal will launch in a new full-screen window. If you try to minimize the window, exit full-screen, or switch tabs, a warning dialog box will appear. If you switch tabs again, you will be disqualified.</li>
         </ul>
       </div>
 
@@ -166,11 +191,18 @@ export default function ExamStartPage({ params }) {
              {!snapTaken ? (
                <button className="btn btn-primary" onClick={takeSnap}>Capture ID Snap</button>
              ) : (
-               <div className="flex gap-4">
-                 <button className="btn btn-secondary" onClick={() => setSnapTaken(false)}>Retake Snap</button>
-                 <button className="btn btn-success" onClick={proceedToExam} disabled={loading}>
-                   {loading ? 'Initializing...' : <><CheckCircle size={20} /> Start Examination</>}
-                 </button>
+               <div className="flex flex-col gap-4 w-full">
+                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem', cursor: 'pointer', background: 'var(--secondary)', padding: '1rem', borderRadius: '8px', border: `1px solid ${agreed ? 'var(--success)' : 'var(--border)'}` }}>
+                   <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: '0.2rem', width: 'auto' }} />
+                   <span style={{ fontSize: '0.9rem', color: 'var(--foreground)' }}>I agree and declare that the document furnished in the snapshot is strictly original and there is no falsehood or tampering involved. I also agree to unblock popups.</span>
+                 </label>
+                 
+                 <div className="flex gap-4 self-center mt-2">
+                   <button className="btn btn-secondary" onClick={() => setSnapTaken(false)}>Retake Snap</button>
+                   <button className="btn btn-success" onClick={proceedToExam} disabled={loading || !agreed}>
+                     {loading ? 'Launching Exam...' : <><CheckCircle size={20} /> Start Examination</>}
+                   </button>
+                 </div>
                </div>
              )}
           </div>

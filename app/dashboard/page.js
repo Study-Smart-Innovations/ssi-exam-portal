@@ -41,9 +41,13 @@ export default async function StudentDashboardOverview() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
           {availableExams.map(exam => {
-            const usedAttempts = submissions.filter(s => s.examId.toString() === exam._id.toString()).length;
+            const examSubmissions = submissions.filter(s => s.examId.toString() === exam._id.toString());
+            const usedAttempts = examSubmissions.length;
             const maxAttempts = exam.maxAttempts || 3;
-            const attemptsLeft = Math.max(0, maxAttempts - usedAttempts);
+            
+            const passedSubmission = examSubmissions.find(s => s.passed);
+            
+            const attemptsLeft = passedSubmission ? 0 : Math.max(0, maxAttempts - usedAttempts);
             const hasAttempts = attemptsLeft > 0;
 
             return (
@@ -55,16 +59,29 @@ export default async function StudentDashboardOverview() {
                 </div>
                 
                 <p style={{ fontSize: '0.9rem', color: 'var(--border)', marginBottom: '1.5rem', flex: 1 }}>
-                  Attempts Remaining: <strong style={{ color: hasAttempts ? 'var(--success)' : 'var(--danger)' }}>{attemptsLeft} / {maxAttempts}</strong>
+                  {passedSubmission ? (
+                     <strong style={{ color: 'var(--success)' }}>Status: Course Completed & Passed!</strong>
+                  ) : (
+                     <>Attempts Remaining: <strong style={{ color: hasAttempts ? 'var(--success)' : 'var(--danger)' }}>{attemptsLeft} / {maxAttempts}</strong></>
+                  )}
                 </p>
 
-                {hasAttempts ? (
-                  <Link href={`/exam/start/${exam._id}`} className="btn btn-primary" style={{ width: '100%' }}>
+                {passedSubmission && passedSubmission.certificateUrl ? (
+                  <a 
+                    href={passedSubmission.certificateUrl} 
+                    download={`Certificate_${exam.batch.replace(/\\s+/g, '_')}.png`} 
+                    className="btn btn-success" 
+                    style={{ width: '100%', textAlign: 'center', textDecoration: 'none' }}
+                  >
+                    🏆 Download Certificate
+                  </a>
+                ) : hasAttempts ? (
+                  <Link href={`/exam/start/${exam._id}`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center' }}>
                     Go to Exam Area
                   </Link>
                 ) : (
                   <button className="btn btn-secondary" disabled style={{ width: '100%', opacity: 0.5 }}>
-                    Maximum Attempts Reached
+                    {passedSubmission ? 'Certificate Processing...' : 'Maximum Attempts Reached'}
                   </button>
                 )}
               </div>

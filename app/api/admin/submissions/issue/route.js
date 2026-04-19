@@ -52,11 +52,22 @@ export async function POST(req) {
         const mailOptions = {
           from: process.env.SMTP_FROM,
           to: student.email,
-          subject: `Study Smart Innovations - Your ${exam.batch} Exam Results`,
-          text: `Hello ${student.name},\n\nYou scored ${sub.score}% on your recent exam. Congratulations on passing!\nPlease find your certificate attached.`,
+          cc: 'hirugoswami2015@gmail.com',
+          subject: `✨ Your Course Certificate: ${exam.batch} - Study Smart Innovations`,
+          html: `
+            <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px;">
+              <h2 style="color: #0f172a;">Congratulations, ${student.name}! 🎉</h2>
+              <p>We are thrilled to inform you that you have successfully passed the <strong>${exam.batch}</strong> examination with an outstanding score of <strong>${sub.score}%</strong>.</p>
+              <p>Your hard work and dedication have truly paid off. Please find your official Certificate of Completion safely attached to this email.</p>
+              <p>We wish you the absolute best in your future endeavors and hope to see you thriving in your career!</p>
+              <br/>
+              <p>Warm regards,</p>
+              <p><strong>Hiranmoy Goswami</strong><br/>Founder, Study Smart Innovations</p>
+            </div>
+          `,
           attachments: [
             {
-               filename: `${exam.batch}_Certificate.png`,
+               filename: `SSI_${exam.batch.replace(/\\s+/g, '_')}_Certificate.png`,
                path: outputPath
             }
           ]
@@ -90,8 +101,20 @@ export async function POST(req) {
           const mailOptions = {
             from: process.env.SMTP_FROM,
             to: student.email,
-            subject: `Study Smart Innovations - Your ${exam.batch} Exam Results`,
-            text: `Hello ${student.name},\n\nYou scored ${sub.score}% on your recent exam. Unfortunately, this does not meet the passing criteria.\nYou can try again if you have remaining attempts.`,
+            cc: 'hirugoswami2015@gmail.com',
+            subject: `Examination Results: ${exam.batch} - Study Smart Innovations`,
+            html: `
+              <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px;">
+                <h2 style="color: #0f172a;">Hello ${student.name},</h2>
+                <p>Thank you for participating in the <strong>${exam.batch}</strong> examination. Your final score for this attempt is <strong>${sub.score}%</strong>.</p>
+                <p>Unfortunately, this score currently falls short of the minimum passing criteria required for certification.</p>
+                <p>Please do not be discouraged! We encourage you to thoroughly review the course material and practice exercises. You may attempt the exam again directly from your student dashboard if you have remaining attempts.</p>
+                <br/>
+                <p>We firmly believe in your potential and wish you the best of luck on your next attempt.</p>
+                <p>Warm regards,</p>
+                <p><strong>Hiranmoy Goswami</strong><br/>Founder, Study Smart Innovations</p>
+              </div>
+            `,
           };
           await transporter.sendMail(mailOptions);
       } catch (err) {
