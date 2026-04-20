@@ -26,7 +26,11 @@ export default function ExamPlayPage({ params }) {
   const [warnings, setWarnings] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [cameraActive, setCameraActive] = useState(true);
+  const [cameraRetry, setCameraRetry] = useState(0);
+  const [proctoringReady, setProctoringReady] = useState(false);
   const lastLogTimestampRef = useRef(0);
+  const warningsRef = useRef(0);
 
   // Device detection
   useEffect(() => {
@@ -77,7 +81,7 @@ export default function ExamPlayPage({ params }) {
     if (submitting) return;
     setSubmitting(true);
     try {
-      await fetch('/api/exam/submit', {
+      const res = await fetch('/api/exam/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -87,6 +91,8 @@ export default function ExamPlayPage({ params }) {
         })
       });
 
+      const data = await res.json();
+
       // Log activity
       fetch('/api/exam/log_activity', {
         method: 'POST',
@@ -94,52 +100,111 @@ export default function ExamPlayPage({ params }) {
         body: JSON.stringify({ type: 'SUBMITTED', examId, examTitle: exam?.title, message: 'Exam successfully submitted for evaluation.' })
       });
 
-      router.push('/dashboard/results');
+      if (data.submissionId) {
+        router.push(`/exam/feedback/${data.submissionId}`);
+      } else {
+        router.push('/dashboard/results');
+      }
     } catch (err) {
       showAlert('Submission Error', 'Error submitting exam. Please check your connection and try again.', 'DANGER');
       setSubmitting(false); // Let them try again
     }
   }, [submitting, examId, mcqAnswers, codingAnswers, exam, router, showAlert]);
 
-  // Tab switching detection
-  const handleVisibilityChange = useCallback(() => {
-    if (document.hidden && !submitting) {
-      // Prevent duplicate logs (debounce)
-      const now = Date.now();
-      if (now - lastLogTimestampRef.current < 2000) return;
-      lastLogTimestampRef.current = now;
-
-      let currentWarnings = 0;
-      setWarnings(w => {
-        currentWarnings = w + 1;
-        return currentWarnings;
-      });
-
-      if (currentWarnings === 1) {
-        showAlert('Proctoring Warning', 'You have switched tabs or minimized the window. Doing this again will disqualify you and auto-submit the exam.', 'DANGER');
-        // Log first warning
-        fetch('/api/exam/log_activity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'TAB_SWITCH', examId, examTitle: exam.title, message: 'FIRST WARNING: Student switched tabs.' })
-        });
-      } else if (currentWarnings === 2) {
-        showAlert('Disqualified', 'You switched tabs again. The exam is now submitting automatically.', 'DANGER');
-        // Log violation
-        fetch('/api/exam/log_activity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'TAB_SWITCH', examId, examTitle: exam.title, message: 'DISQUALIFIED: Second tab switch violation.' })
-        });
-        submitExam(); // Auto submit
-      }
+  // Cheating Beep
+  const playAlertSound = useCallback(() => {
+    try {
+      const ctx = window.__audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      window.__audioCtx = ctx; // Cache it globally
+      if (ctx.state === 'suspended') ctx.resume();
+      
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(1000, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } catch(e) {
+      console.error("Audio Failed:", e);
     }
-  }, [submitting, exam, examId, showAlert, submitExam]);
+  }, []);
+
+  // Strict anti-cheat detection
+  const triggerViolation = useCallback((type, message, disqualifies = false) => {
+    if (submitting) return;
+
+    const now = Date.now();
+    if (now - lastLogTimestampRef.current < 2000) return; // Debounce strict checks
+    lastLogTimestampRef.current = now;
+
+    playAlertSound();
+
+    if (disqualifies) {
+       showAlert('Disqualified', message, 'DANGER');
+       fetch('/api/exam/log_activity', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ type: 'VIOLATION_CRITICAL', examId, examTitle: exam?.title, message })
+       });
+       submitExam();
+       return;
+    }
+
+    warningsRef.current += 1;
+    setWarnings(warningsRef.current);
+
+    if (warningsRef.current < 3) {
+      showAlert(`Warning ${warningsRef.current}/3`, `${message} Doing this again will eventually disqualify you and auto-submit the exam.`, 'DANGER');
+      fetch('/api/exam/log_activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'VIOLATION_WARNING', examId, examTitle: exam?.title, message: `WARNING ${warningsRef.current}: ${message}` })
+      });
+    } else if (warningsRef.current >= 3) {
+      showAlert('Disqualified', 'You have hit the maximum number of warnings. The exam is submitting automatically.', 'DANGER');
+      fetch('/api/exam/log_activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'VIOLATION_CRITICAL', examId, examTitle: exam?.title, message: `DISQUALIFIED: Repeated violation - ${message}` })
+      });
+      submitExam(); // Auto submit
+    }
+  }, [submitting, exam, examId, showAlert, submitExam, playAlertSound]);
+
+  const handleVisibilityChange = useCallback(() => {
+    if (document.hidden) triggerViolation('TAB_SWITCH', 'You can not minimize or move to other tabs.');
+  }, [triggerViolation]);
+
+  const handleBlur = useCallback(() => {
+    triggerViolation('FOCUS_LOST', 'You can not minimize or move to other tabs.');
+  }, [triggerViolation]);
+
+  const handleCameraFail = useCallback(() => {
+    setCameraActive(false);
+    setProctoringReady(false); // Pause tracking so they can use system prompts to fix it
+    triggerViolation('CAMERA_FAIL', 'Your camera was unexpectedly disabled or disconnected.', false);
+  }, [triggerViolation]);
+
+  const handleCameraSuccess = useCallback(() => {
+    setCameraActive(true);
+    setProctoringReady(true);
+  }, []);
 
   useEffect(() => {
+    if (!proctoringReady) return; // Wait for camera permission before aggressively tracking blur!
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [handleVisibilityChange]);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [proctoringReady, handleVisibilityChange, handleBlur]);
 
   // Timer
   useEffect(() => {
@@ -259,6 +324,90 @@ export default function ExamPlayPage({ params }) {
     );
   }
 
+  if (!cameraActive) {
+    return (
+      <div className="restriction-overlay">
+        <div className="glass-panel restriction-card" style={{ borderColor: 'var(--danger)' }}>
+           <div className="icon-badge">
+             <AlertOctagon size={48} />
+           </div>
+           
+           <h1 className="restriction-title text-gradient">Camera Blocked</h1>
+           
+           <div className="alert-tag">
+             <span>PROCTORING ERROR</span>
+           </div>
+           
+           <p className="restriction-text">
+             We lost connection to your webcam. Your exam interface is securely locked until camera permissions and hardware are fully restored.
+           </p>
+
+           <button className="btn btn-primary" onClick={() => setCameraRetry(r => r + 1)} style={{ padding: '1rem', width: '100%', fontSize: '1.2rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center' }}>
+             Retry Camera Access
+           </button>
+        </div>
+        <div style={{ display: 'none' }}>
+           <CameraProctor onCameraFail={handleCameraFail} onCameraSuccess={handleCameraSuccess} retryKey={cameraRetry} />
+        </div>
+        <style jsx>{`
+          .restriction-overlay {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1.5rem;
+            background: var(--background);
+          }
+          .restriction-card {
+            width: 100%;
+            max-width: 500px;
+            padding: 3rem;
+            border-radius: 2rem;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(239,68,68,0.2);
+            border: 2px solid var(--danger);
+          }
+          .icon-badge {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            padding: 1.5rem;
+            border-radius: 50%;
+            width: fit-content;
+            margin: 0 auto 1.5rem;
+          }
+          .restriction-title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--foreground);
+            font-family: var(--font-space-grotesk);
+          }
+          .alert-tag {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--danger);
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+          }
+          .restriction-text {
+            color: var(--border);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+          }
+          @media (max-width: 640px) {
+            .restriction-card {
+              padding: 2rem 1.5rem;
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   if (!exam || combinedQuestions.length === 0) return <div className="container mt-8 text-center">Loading Exam Environment...</div>;
 
   const currentQ = combinedQuestions[currentIdx];
@@ -273,19 +422,21 @@ export default function ExamPlayPage({ params }) {
     <div className="flex flex-col" style={{ minHeight: '100vh' }}>
       {/* Top Navbar */}
       <header className="exam-header">
-        <h2 className="exam-title">{exam.title}</h2>
-        <div className="flex items-center gap-3 md:gap-6">
-          {warnings > 0 && <span className="warning-text"><AlertTriangle size={18} /> <span className="hidden-mobile">Warning: </span>{warnings}/2</span>}
-          <div className="timer-display" style={{ color: timeLeft < 300 ? 'var(--danger)' : 'var(--success)' }}>
-            <Clock size={20} /> <span>{formatTime(timeLeft)}</span>
+        <h2 className="exam-title text-gradient">{exam.title}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginLeft: 'auto' }}>
+          {warnings > 0 && <span className="warning-text" style={{ fontSize: '1.2rem', padding: '0.4rem 1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}><AlertTriangle size={24} /> <span className="hidden-mobile">Warnings: </span>{warnings}/3</span>}
+          <div className="timer-display" style={{ color: timeLeft < 300 ? 'var(--danger)' : 'var(--success)', padding: '0.4rem 1.5rem', background: 'var(--background)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <Clock size={24} /> <span style={{ fontSize: '1.5rem', fontFamily: 'monospace' }}>{formatTime(timeLeft)}</span>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={submitExam} disabled={submitting}>
-            {submitting ? '...' : (
-              <>
-                <span className="hidden-mobile">Finish & </span>Submit
-              </>
-            )}
-          </button>
+          <div style={{ marginLeft: '3rem', paddingLeft: '3rem', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+            <button className="btn btn-primary" style={{ padding: '0.8rem 2rem', fontWeight: 'bold' }} onClick={submitExam} disabled={submitting}>
+              {submitting ? 'Submitting...' : (
+                <>
+                  <span className="hidden-mobile">Finish & </span>Submit
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -385,7 +536,7 @@ export default function ExamPlayPage({ params }) {
         </main>
       </div>
 
-      <CameraProctor />
+      <CameraProctor onCameraFail={handleCameraFail} onCameraSuccess={handleCameraSuccess} retryKey={cameraRetry} />
 
       <style jsx>{`
         .exam-header {

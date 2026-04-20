@@ -2,6 +2,7 @@ import clientPromise from '@/lib/mongodb';
 import { requireAuth } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
 import Link from 'next/link';
+import ShareButtons from '@/components/ShareButtons';
 
 export default async function StudentDashboardOverview() {
   const auth = await requireAuth(['student']);
@@ -67,14 +68,19 @@ export default async function StudentDashboardOverview() {
                 </p>
 
                 {passedSubmission && passedSubmission.certificateUrl ? (
-                  <a 
-                    href={passedSubmission.certificateUrl} 
-                    download={`Certificate_${exam.batch.replace(/\\s+/g, '_')}.png`} 
-                    className="btn btn-success" 
-                    style={{ width: '100%', textAlign: 'center', textDecoration: 'none' }}
-                  >
-                    🏆 Download Certificate
-                  </a>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <a 
+                      href={passedSubmission.certificateUrl} 
+                      download={`Certificate_${exam.batch.replace(/\\s+/g, '_')}.png`} 
+                      className="btn btn-success" 
+                      style={{ width: '100%', textAlign: 'center', textDecoration: 'none' }}
+                    >
+                      🏆 Download Certificate
+                    </a>
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <ShareButtons examTitle={exam.title} certificateUrl={passedSubmission.certificateUrl} />
+                    </div>
+                  </div>
                 ) : hasAttempts ? (
                   <Link href={`/exam/start/${exam._id}`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center' }}>
                     Go to Exam Area

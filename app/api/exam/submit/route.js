@@ -36,8 +36,11 @@ export async function POST(req) {
         }
       }
     );
-
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    
+    return new Response(JSON.stringify({ 
+      success: true, 
+      submissionId: activeSubmission._id.toString() 
+    }), { status: 200 });
   } catch (error) {
     console.error('Exam Submit Error:', error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });

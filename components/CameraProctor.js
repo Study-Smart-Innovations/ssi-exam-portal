@@ -3,10 +3,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, UserX } from 'lucide-react';
 
-export default function CameraProctor() {
+export default function CameraProctor({ onCameraFail, onCameraSuccess, retryKey = 0 }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [error, setError] = useState(false);
+  
+  const failRef = useRef(onCameraFail);
+  const successRef = useRef(onCameraSuccess);
+
+  useEffect(() => {
+    failRef.current = onCameraFail;
+    successRef.current = onCameraSuccess;
+  }, [onCameraFail, onCameraSuccess]);
 
   useEffect(() => {
     async function startCamera() {
@@ -19,11 +27,24 @@ export default function CameraProctor() {
         
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
-          // Note: autoPlay handles the playing state.
+        }
+        
+        setError(false);
+        if (successRef.current) successRef.current();
+
+        // Extremely strict monitoring: If hardware is disabled or pulled out
+        const track = mediaStream.getVideoTracks()[0];
+        if (track) {
+          track.onended = () => {
+            console.error("Proctor Camera disconnected mid-exam.");
+            setError(true);
+            if (failRef.current) failRef.current();
+          };
         }
       } catch (err) {
         console.error("Proctor Camera Error:", err);
         setError(true);
+        if (failRef.current) failRef.current();
       }
     }
 
@@ -38,7 +59,7 @@ export default function CameraProctor() {
         streamRef.current = null;
       }
     };
-  }, []);
+  }, [retryKey]);
 
   if (error) {
     return (

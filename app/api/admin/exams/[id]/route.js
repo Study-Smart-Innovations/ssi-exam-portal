@@ -41,6 +41,7 @@ export async function PUT(req, { params }) {
       batch: payload.batch,
       duration: payload.duration,
       maxAttempts: parseInt(payload.maxAttempts) || 3,
+      passingPercentage: parseFloat(payload.passingPercentage) || 50,
       rules: payload.rules || [],
       mcqs: payload.mcqs || [],
       codingQuestions: payload.codingQuestions || [],

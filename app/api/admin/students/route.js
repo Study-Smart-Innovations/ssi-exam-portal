@@ -44,16 +44,18 @@ export async function POST(req) {
     // Filter out existing emails efficiently (case-insensitive)
     const emailsToImport = studentsArr.map(s => s.email?.toLowerCase().trim()).filter(Boolean);
     const existingDocs = await db.collection('students').find({ email: { $in: emailsToImport } }).toArray();
-    const existingEmails = new Set(existingDocs.map(d => d.email.toLowerCase()));
+    const existingDocMap = new Map(existingDocs.map(d => [d.email.toLowerCase(), d]));
 
     const newDocuments = [];
+    const bulkOps = [];
     let insertedCount = 0;
+    let updatedCount = 0;
 
     for (const s of studentsArr) {
       if (!s.name || !s.email || !s.phone) continue;
       const lowerEmail = s.email.toLowerCase().trim();
 
-      if (!existingEmails.has(lowerEmail)) {
+      if (!existingDocMap.has(lowerEmail)) {
          newDocuments.push({
            name: s.name,
            email: lowerEmail,
@@ -63,8 +65,24 @@ export async function POST(req) {
            attempts,
            createdAt: new Date()
          });
-         // Add to set to prevent duplicates within the imported file itself
-         existingEmails.add(lowerEmail);
+         // Add to map to prevent duplicates within the imported file itself
+         existingDocMap.set(lowerEmail, { email: lowerEmail });
+      } else {
+         // User already exists! Append the new batches and grant attempts.
+         const newAttempts = {};
+         batch.forEach(b => newAttempts[`attempts.${b}`] = 3);
+         
+         bulkOps.push({
+           updateOne: {
+             filter: { email: lowerEmail },
+             update: { 
+               $addToSet: { batch: { $each: batch } },
+               $set: newAttempts
+             }
+           }
+         });
+         // Also prevent duplicating the update if the file has duplicate emails
+         existingDocMap.set(lowerEmail, { email: lowerEmail });
       }
     }
 
@@ -73,11 +91,16 @@ export async function POST(req) {
        insertedCount = result.insertedCount;
     }
 
-    if (insertedCount === 0 && studentsArr.length > 0) {
-       return new Response(JSON.stringify({ error: 'Data conflict: All provided emails already exist in the database or invalid rows.' }), { status: 409 });
+    if (bulkOps.length > 0) {
+       const bulkResult = await db.collection('students').bulkWrite(bulkOps, { ordered: false });
+       updatedCount = bulkResult.modifiedCount;
     }
 
-    return new Response(JSON.stringify({ success: true, insertedCount }), { status: 201 });
+    if (insertedCount === 0 && updatedCount === 0 && studentsArr.length > 0) {
+       return new Response(JSON.stringify({ error: 'Data conflict: Details could not be inserted or updated.' }), { status: 409 });
+    }
+
+    return new Response(JSON.stringify({ success: true, insertedCount, updatedCount }), { status: 201 });
   } catch (error) {
     console.error('API Error:', error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });

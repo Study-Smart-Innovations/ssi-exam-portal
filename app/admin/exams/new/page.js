@@ -12,6 +12,7 @@ export default function NewExamPage() {
     batch: 'C',
     duration: 60,
     maxAttempts: 3,
+    passingPercentage: 50,
     rules: "1. Camera must be ON.\n2. Do NOT change tabs.",
     mcqs: [],
     codingQuestions: []
@@ -180,10 +181,17 @@ export default function NewExamPage() {
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Max Attempts per Student</label>
-            <input type="number" required min="1" value={formData.maxAttempts || 3} onChange={e => setFormData({...formData, maxAttempts: parseInt(e.target.value) || 1})} />
-            <p style={{ fontSize: '0.8rem', color: 'var(--border)', marginTop: '0.25rem' }}>Set how many times a student can attempt this specific exam.</p>
+          <div className="flex gap-4">
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Max Attempts per Student</label>
+              <input type="number" required min="1" value={formData.maxAttempts || 3} onChange={e => setFormData({...formData, maxAttempts: parseInt(e.target.value) || 1})} />
+              <p style={{ fontSize: '0.8rem', color: 'var(--border)', marginTop: '0.25rem' }}>Set how many times a student can attempt this specific exam.</p>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Passing Threshold (%)</label>
+              <input type="number" required min="1" max="100" value={formData.passingPercentage || 50} onChange={e => setFormData({...formData, passingPercentage: parseFloat(e.target.value) || 50})} />
+              <p style={{ fontSize: '0.8rem', color: 'var(--border)', marginTop: '0.25rem' }}>Minimum percentage score required to log a 'pass' and generate a certificate.</p>
+            </div>
           </div>
 
           <div>

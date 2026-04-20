@@ -1,6 +1,7 @@
 import clientPromise from '@/lib/mongodb';
 import { requireAuth } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
+import ShareButtons from '@/components/ShareButtons';
 
 export default async function ResultsHistoryPage() {
   const auth = await requireAuth(['student']);
@@ -53,7 +54,10 @@ export default async function ResultsHistoryPage() {
                   <td style={{ padding: '1rem' }}>{sub.status === 'evaluated' ? `${sub.score}%` : '-'}</td>
                   <td style={{ padding: '1rem' }}>
                      {sub.status === 'evaluated' && sub.passed ? (
-                       <a href={sub.certificateUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Download</a>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                         <a href={sub.certificateUrl} download target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ textDecoration: 'none', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>Download</a>
+                         <ShareButtons examTitle={sub.examTitle} certificateUrl={sub.certificateUrl} />
+                       </div>
                      ) : (
                        <span style={{ color: 'var(--border)' }}>N/A</span>
                      )}
