@@ -210,6 +210,15 @@ input:focus, textarea:focus, select:focus {
   .main-content {
     padding: 1rem;
   }
+  .hidden-mobile {
+    display: none !important;
+  }
+  .visible-mobile {
+    display: block !important;
+  }
+  .mobile-padded {
+    padding-top: 5.5rem !important;
+  }
 }
 
 /* Mobile Responsive Utilities */
@@ -218,14 +227,6 @@ input:focus, textarea:focus, select:focus {
 }
 
 @media (max-width: 768px) {
-  .hidden-mobile {
-    display: none !important;
-  }
-  
-  .visible-mobile {
-    display: block !important;
-  }
-
   .container {
     padding: 0 1.5rem;
   }
@@ -244,10 +245,6 @@ input:focus, textarea:focus, select:focus {
 
   table {
     min-width: 600px; /* Force scroll on small screens */
-  }
-
-  .mobile-padded {
-    padding-top: 5.5rem !important;
   }
 }
 

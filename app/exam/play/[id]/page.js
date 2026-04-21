@@ -149,7 +149,7 @@ export default function ExamPlayPage({ params }) {
        fetch('/api/exam/log_activity', {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ type: 'VIOLATION_CRITICAL', examId, examTitle: exam?.title, message })
+         body: JSON.stringify({ type: 'DISQUALIFIED', examId, examTitle: exam?.title, message })
        });
        submitExam();
        return;
@@ -163,14 +163,14 @@ export default function ExamPlayPage({ params }) {
       fetch('/api/exam/log_activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'VIOLATION_WARNING', examId, examTitle: exam?.title, message: `WARNING ${warningsRef.current}: ${message}` })
+        body: JSON.stringify({ type: type, examId, examTitle: exam?.title, message: `WARNING ${warningsRef.current}: ${message}` })
       });
     } else if (warningsRef.current >= 3) {
       showAlert('Disqualified', 'You have hit the maximum number of warnings. The exam is submitting automatically.', 'DANGER');
       fetch('/api/exam/log_activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'VIOLATION_CRITICAL', examId, examTitle: exam?.title, message: `DISQUALIFIED: Repeated violation - ${message}` })
+        body: JSON.stringify({ type: 'DISQUALIFIED', examId, examTitle: exam?.title, message: `DISQUALIFIED: Repeated violation - ${message}` })
       });
       submitExam(); // Auto submit
     }

@@ -86,7 +86,12 @@ export default function ActivityLog() {
   const getIcon = (type) => {
     switch (type) {
       case 'STARTED': return <Play size={16} style={{ color: '#f59e0b' }} />; // Yellow
-      case 'TAB_SWITCH': return <AlertTriangle size={16} style={{ color: '#ef4444' }} />; // Red
+      case 'TAB_SWITCH':
+      case 'FOCUS_LOST':
+      case 'CAMERA_FAIL':
+      case 'VIOLATION_WARNING':
+      case 'VIOLATION_CRITICAL':
+      case 'DISQUALIFIED': return <AlertTriangle size={16} style={{ color: '#ef4444' }} />; // Red
       case 'SUBMITTED': return <CheckCircle size={16} style={{ color: '#10b981' }} />; // Green
       default: return <Clock size={16} className="text-border" />;
     }
@@ -95,7 +100,12 @@ export default function ActivityLog() {
   const getTypeStyles = (type) => {
     switch (type) {
       case 'STARTED': return { borderLeft: '4px solid #f59e0b', color: '#f59e0b' };
-      case 'TAB_SWITCH': return { borderLeft: '4px solid #ef4444', color: '#ef4444' };
+      case 'TAB_SWITCH':
+      case 'FOCUS_LOST':
+      case 'CAMERA_FAIL':
+      case 'VIOLATION_WARNING': return { borderLeft: '4px solid #ef4444', color: '#ef4444' };
+      case 'VIOLATION_CRITICAL':
+      case 'DISQUALIFIED': return { borderLeft: '4px solid #b91c1c', color: '#b91c1c' };
       case 'SUBMITTED': return { borderLeft: '4px solid #10b981', color: '#10b981' };
       default: return { borderLeft: '4px solid var(--border)', color: 'var(--primary)' };
     }
@@ -183,7 +193,8 @@ export default function ActivityLog() {
                         ({activity.studentEmail})
                       </span>
                       {activity.type === 'STARTED' && ' started '}
-                      {activity.type === 'TAB_SWITCH' && ' triggered a warning during '}
+                      {(activity.type === 'TAB_SWITCH' || activity.type === 'FOCUS_LOST' || activity.type === 'CAMERA_FAIL' || activity.type === 'VIOLATION_WARNING' || activity.type === 'VIOLATION_CRITICAL') && ' triggered a warning during '}
+                      {activity.type === 'DISQUALIFIED' && ' was disqualified from '}
                       {activity.type === 'SUBMITTED' && ' submitted '}
                       <span className="exam-tag">{activity.examTitle}</span>
                     </div>

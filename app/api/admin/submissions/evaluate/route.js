@@ -104,23 +104,19 @@ export async function POST(req) {
       try {
         const templatePath = path.join(process.cwd(), 'public', 'template', `SSI_${exam.batch}_Course_Certificate.png`);
         if (fs.existsSync(templatePath)) {
-          const dateString = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+          const d = new Date();
+          const dateString = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getFullYear())}`;
           const svgText = `
-            <svg width="1536" height="1024">
+            <svg width="2000" height="1414">
               <style>
-                .title { fill: #0f172a; font-size: 64px; font-weight: bold; font-family: 'Times New Roman', serif; text-anchor: middle; }
-                .cid { fill: #333333; font-size: 26px; font-family: 'Times New Roman', serif; }
-                .date { fill: #333333; font-size: 26px; font-family: 'Times New Roman', serif; }
+                .title { fill: #0f172a; font-size: 80px; font-weight: bold; font-style: italic; font-family: 'Times New Roman', serif; text-anchor: middle; }
+                .cid { fill: #333333; font-size: 34px; font-weight: bold; font-family: 'Times New Roman', serif; }
+                .date { fill: #333333; font-size: 34px; font-weight: bold; font-family: 'Times New Roman', serif; }
               </style>
               
-              <!-- Clean solid white rectangles cleanly erasing placeholders without leaving artifacts -->
-              <rect x="250" y="490" width="1000" height="120" fill="#ffffff" />
-              <rect x="985" y="805" width="280" height="40" fill="#ffffff" />
-              <rect x="310" y="805" width="360" height="40" fill="#FDFCF8" />
-
-              <text x="768" y="570" class="title">${student.name}</text>
-              <text x="1005" y="838" class="cid">${certId}</text>
-              <text x="340" y="838" class="date">${dateString}</text>
+              <text x="1000" y="670" class="title">${student.name}</text>
+              <text x="935" y="980" class="cid">SSI-${certId}</text>
+              <text x="935" y="1310" class="date">${dateString}</text>
             </svg>
           `;
 
@@ -131,8 +127,6 @@ export async function POST(req) {
             fs.mkdirSync(path.join(process.cwd(), 'public', 'certs'), { recursive: true });
           }
 
-          const msmeLogoPath = path.join(process.cwd(), 'public', 'template', 'msme_logo_2.png');
-
           const compositeLayers = [
             {
               input: Buffer.from(svgText),
@@ -140,17 +134,6 @@ export async function POST(req) {
               left: 0,
             }
           ];
-
-          if (fs.existsSync(msmeLogoPath)) {
-            // Resize logo so it fits beautifully in the top right corner.
-            const msmeBuffer = await sharp(msmeLogoPath).resize({ width: 180, withoutEnlargement: true }).toBuffer();
-            compositeLayers.push({
-              input: msmeBuffer,
-              top: 130, // Nudged slightly up to account for extra height
-              left: 1170, // Nudged right
-              blend: 'multiply' // Solid white background gracefully drops out without checkerboard artifacts
-            });
-          }
 
           await sharp(templatePath)
             .composite(compositeLayers)

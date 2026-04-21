@@ -23,6 +23,9 @@ export default async function StudentDashboardOverview() {
     batch: { $in: student.batch }
   }).toArray();
 
+  // Fetch active announcements
+  const announcements = await db.collection('announcements').find({ isActive: true }).sort({ _id: -1 }).toArray();
+
   // Fetch student's submissions to count attempts
   const submissions = await db.collection('submissions').find({
     studentId: new ObjectId(auth.user.id)
@@ -30,17 +33,36 @@ export default async function StudentDashboardOverview() {
 
   return (
     <div>
+      {announcements.length > 0 && (
+        <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {announcements.map(ann => (
+            <div key={ann._id.toString()} style={{ background: 'linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1))', border: '1px solid var(--primary)', borderRadius: '8px', padding: '1rem 1.5rem', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: 'var(--primary)' }} />
+              <h3 style={{ margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span role="img" aria-label="announcement">📢</span> {ann.title}
+              </h3>
+              <p style={{ margin: 0, opacity: 0.9, whiteSpace: 'pre-wrap' }}>{ann.message}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       <h1 className="text-gradient">Welcome, {student.name}</h1>
       <p style={{ color: 'var(--border)', marginBottom: '2rem' }}>Ready to take your exams and get certified?</p>
       
-      <h2 className="mb-4">Available Exams</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <h2 style={{ margin: 0 }}>Available Exams</h2>
+        <Link href="/dashboard/courses" className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
+          Explore Other Courses
+        </Link>
+      </div>
       
       {availableExams.length === 0 ? (
         <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--border)' }}>
           No exams currently assigned to your enrolled courses.
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
           {availableExams.map(exam => {
             const examSubmissions = submissions.filter(s => s.examId.toString() === exam._id.toString());
             const usedAttempts = examSubmissions.length;
