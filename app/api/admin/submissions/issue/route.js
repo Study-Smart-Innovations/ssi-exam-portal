@@ -4,14 +4,7 @@ import nodemailer from 'nodemailer';
 import path from 'path';
 import { requireAuth } from '@/lib/auth';
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+import { getSettings } from '@/lib/settings';
 
 export async function POST(req) {
   try {
@@ -24,6 +17,16 @@ export async function POST(req) {
     if (!submissionId) {
       return new Response(JSON.stringify({ error: 'Missing submissionId' }), { status: 400 });
     }
+
+    const settings = await getSettings();
+    const transporter = nodemailer.createTransport({
+      host: settings.smtp.host,
+      port: parseInt(settings.smtp.port || '587'),
+      auth: {
+        user: settings.smtp.user,
+        pass: settings.smtp.pass,
+      },
+    });
 
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB_NAME || 'ssi_portal');
@@ -50,7 +53,7 @@ export async function POST(req) {
 
       try {
         const mailOptions = {
-          from: process.env.SMTP_FROM,
+          from: settings.smtp.from,
           to: student.email,
           cc: 'hirugoswami2015@gmail.com',
           subject: `✨ Your Course Certificate: ${exam.batch} - Study Smart Innovations`,
@@ -99,7 +102,7 @@ export async function POST(req) {
       // Send Failure Email
       try {
           const mailOptions = {
-            from: process.env.SMTP_FROM,
+            from: settings.smtp.from,
             to: student.email,
             cc: 'hirugoswami2015@gmail.com',
             subject: `Examination Results: ${exam.batch} - Study Smart Innovations`,

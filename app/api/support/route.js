@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import clientPromise from '@/lib/mongodb';
+import { getSettings } from '@/lib/settings';
 
 export async function POST(req) {
   try {
@@ -21,19 +22,20 @@ export async function POST(req) {
     });
 
     // 2. Setup Nodemailer Transporter
+    const settings = await getSettings();
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT),
-      secure: parseInt(process.env.SMTP_PORT) === 465, // true for 465, false for 587
+      host: settings.smtp.host,
+      port: parseInt(settings.smtp.port),
+      secure: parseInt(settings.smtp.port) === 465, // true for 465, false for 587
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: settings.smtp.user,
+        pass: settings.smtp.pass,
       },
     });
 
     // 3. Send Email
     const mailOptions = {
-      from: process.env.SMTP_FROM,
+      from: settings.smtp.from,
       to: 'ssicommunityadmin@onlinestudysmart.com',
       subject: `New Support Inquiry from ${name}`,
       html: `

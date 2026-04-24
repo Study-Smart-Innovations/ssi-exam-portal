@@ -11,10 +11,28 @@ export async function POST(req) {
     }
 
     if (role === 'admin') {
-      const adminPassword = process.env.ADMIN_PASSWORD || 'admin';
-      const adminEmail = 'admin@studysmart.com'; // Default admin email mapping, could also be configured
+      const adminEmail = 'admin@studysmart.com'; // Default admin email mapping
+      
+      if (email.toLowerCase() !== adminEmail.toLowerCase()) {
+         return new Response(JSON.stringify({ error: 'Invalid admin credentials' }), { status: 401 });
+      }
 
-      if (email.toLowerCase() === adminEmail.toLowerCase() && password === adminPassword) {
+      const client = await clientPromise;
+      const db = client.db(process.env.MONGODB_DB_NAME || 'ssi_portal');
+      const settings = await db.collection('global_settings').findOne({ _id: 'global_settings' });
+
+      let isMatch = false;
+
+      if (settings && settings.adminPasswordHash) {
+         // Use Database Hashed Password
+         isMatch = await bcrypt.compare(password, settings.adminPasswordHash);
+      } else {
+         // Fallback to strict environment variable matching if database hasn't been configured yet
+         const adminPasswordEnv = process.env.ADMIN_PASSWORD || 'admin';
+         isMatch = (password === adminPasswordEnv);
+      }
+
+      if (isMatch) {
         const token = signToken({ email: adminEmail, role: 'admin' });
         // Set cookie
         const headers = new Headers();
