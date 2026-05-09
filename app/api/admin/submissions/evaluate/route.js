@@ -72,7 +72,9 @@ export async function POST(req) {
           Question: ${cq.question}
           Reference Correct Logic: ${cq.sampleAnswer}
           Student Answer: ${studentCode}
-          Does the student's answer correctly solve the problem based on logic and syntax? 
+          Evaluate the student's answer. It DOES NOT need to strictly match the reference answer. 
+          As long as the student's code logically solves the problem, fulfills the requirements, and has correct syntax (even with a different valid approach), consider it correct.
+          Does the student's code correctly solve the problem?
           Strictly answer ONLY with "YES" or "NO".`;
 
         try {
