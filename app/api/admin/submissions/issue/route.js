@@ -22,10 +22,14 @@ export async function POST(req) {
     const transporter = nodemailer.createTransport({
       host: settings.smtp.host,
       port: parseInt(settings.smtp.port || '587'),
+      secure: parseInt(settings.smtp.port) === 465, // true for 465, false for others
       auth: {
         user: settings.smtp.user,
         pass: settings.smtp.pass,
       },
+      tls: {
+        rejectUnauthorized: false // Often needed for shared hosting/Hostinger SMTP
+      }
     });
 
     const client = await clientPromise;
@@ -50,13 +54,20 @@ export async function POST(req) {
     if (sub.passed) {
       // Send Passed Email with Certificate
       const outputPath = path.join(process.cwd(), 'public', 'certs', `cert_${sub._id.toString()}.png`);
+      
+      // Safety check: ensure file exists before attaching
+      const fs = require('fs');
+      if (!fs.existsSync(outputPath)) {
+        console.error("Certificate file missing at:", outputPath);
+        return new Response(JSON.stringify({ error: 'Certificate file not found. Please re-evaluate the submission.' }), { status: 404 });
+      }
 
       try {
         const mailOptions = {
           from: settings.smtp.from,
           to: student.email,
           cc: 'hirugoswami2015@gmail.com',
-          subject: `✨ Your Course Certificate: ${exam.batch} - Study Smart Innovations`,
+          subject: `Your Course Certificate: ${exam.batch} - Study Smart Innovations`,
           html: `
             <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px;">
               <h2 style="color: #0f172a;">Congratulations, ${student.name}! 🎉</h2>
@@ -70,13 +81,14 @@ export async function POST(req) {
           `,
           attachments: [
             {
-               filename: `SSI_${exam.batch.replace(/\\s+/g, '_')}_Certificate.png`,
+               filename: `SSI_${exam.batch.replace(/\s+/g, '_')}_Certificate.png`,
                path: outputPath
             }
           ]
         };
 
-        await transporter.sendMail(mailOptions);
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`Certificate mail sent to ${student.email}. Accepted: ${info.accepted}, Rejected: ${info.rejected}`);
         
         // Log to issued_certificates
         if (sub.certId) {
@@ -95,8 +107,8 @@ export async function POST(req) {
           }
         }
       } catch (err) {
-        console.error("Mail send error:", err);
-        return new Response(JSON.stringify({ error: 'Failed to send certificate email' }), { status: 500 });
+        console.error("Certificate mail send error:", err);
+        return new Response(JSON.stringify({ error: 'Failed to send certificate email: ' + err.message }), { status: 500 });
       }
     } else {
       // Send Failure Email
@@ -119,10 +131,11 @@ export async function POST(req) {
               </div>
             `,
           };
-          await transporter.sendMail(mailOptions);
+          const info = await transporter.sendMail(mailOptions);
+          console.log(`Failure mail sent to ${student.email}. Accepted: ${info.accepted}, Rejected: ${info.rejected}`);
       } catch (err) {
-         console.error("Mail send error:", err);
-         return new Response(JSON.stringify({ error: 'Failed to send failure email' }), { status: 500 });
+         console.error("Failure mail send error:", err);
+         return new Response(JSON.stringify({ error: 'Failed to send failure email: ' + err.message }), { status: 500 });
       }
     }
 
