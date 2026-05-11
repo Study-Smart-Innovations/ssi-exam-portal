@@ -104,47 +104,66 @@ export async function POST(req) {
 
     if (passed) {
       try {
-        const templatePath = path.join(process.cwd(), 'public', 'template', `SSI_${exam.batch}_Course_Certificate.png`);
-        if (fs.existsSync(templatePath)) {
-          const d = new Date();
-          const dateString = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getFullYear())}`;
-          const svgText = `
-            <svg width="2000" height="1414">
-              <style>
-                .title { fill: #0f172a; font-size: 80px; font-weight: bold; font-style: italic; font-family: 'Times New Roman', serif; text-anchor: middle; }
-                .cid { fill: #333333; font-size: 34px; font-weight: bold; font-family: 'Times New Roman', serif; }
-                .date { fill: #333333; font-size: 34px; font-weight: bold; font-family: 'Times New Roman', serif; }
-              </style>
-              
-              <text x="1000" y="670" class="title">${student.name}</text>
-              <text x="935" y="980" class="cid">SSI-${certId}</text>
-              <text x="935" y="1310" class="date">${dateString}</text>
-            </svg>
-          `;
-
-          const outputFilename = `cert_${sub._id.toString()}.png`;
-          const outputPath = path.join(process.cwd(), 'public', 'certs', outputFilename);
-
-          if (!fs.existsSync(path.join(process.cwd(), 'public', 'certs'))) {
-            fs.mkdirSync(path.join(process.cwd(), 'public', 'certs'), { recursive: true });
-          }
-
-          const compositeLayers = [
-            {
-              input: Buffer.from(svgText),
-              top: 0,
-              left: 0,
-            }
-          ];
-
-          await sharp(templatePath)
-            .composite(compositeLayers)
-            .toFile(outputPath);
-
-          certificateUrl = `/certs/${outputFilename}`;
+        // Strip out trailing batch identifiers like " (Batch 1)" or " Batch 1" for template matching
+        // e.g. "Python (Batch 1)" -> "Python", "Java Batch 1" -> "Java"
+        let baseBatchName = exam.batch;
+        if (baseBatchName) {
+            baseBatchName = baseBatchName.split(' ')[0]; // This safely extracts 'Python' from 'Python Batch 1'
         }
+        
+        // Fallback to exact match if base match fails
+        let templatePath = path.join(process.cwd(), 'public', 'template', `SSI_${exam.batch}_Course_Certificate.png`);
+        if (!fs.existsSync(templatePath) && baseBatchName) {
+            templatePath = path.join(process.cwd(), 'public', 'template', `SSI_${baseBatchName}_Course_Certificate.png`);
+        }
+
+        if (!fs.existsSync(templatePath)) {
+            // Revert submission to pending so they can try again once template is added
+            await db.collection('submissions').updateOne({ _id: sub._id }, { $set: { status: 'pending' } });
+            return new Response(JSON.stringify({ error: `Certificate template missing: ${path.basename(templatePath)}` }), { status: 400 });
+        }
+
+        const d = new Date();
+        const dateString = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getFullYear())}`;
+        const svgText = `
+          <svg width="2000" height="1414">
+            <style>
+              .title { fill: #0f172a; font-size: 80px; font-weight: bold; font-style: italic; font-family: 'Times New Roman', serif; text-anchor: middle; }
+              .cid { fill: #333333; font-size: 34px; font-weight: bold; font-family: 'Times New Roman', serif; }
+              .date { fill: #333333; font-size: 34px; font-weight: bold; font-family: 'Times New Roman', serif; }
+            </style>
+            
+            <text x="1000" y="670" class="title">${student.name}</text>
+            <text x="935" y="980" class="cid">SSI-${certId}</text>
+            <text x="935" y="1310" class="date">${dateString}</text>
+          </svg>
+        `;
+
+        const outputFilename = `cert_${sub._id.toString()}.png`;
+        const outputPath = path.join(process.cwd(), 'public', 'certs', outputFilename);
+
+        if (!fs.existsSync(path.join(process.cwd(), 'public', 'certs'))) {
+          fs.mkdirSync(path.join(process.cwd(), 'public', 'certs'), { recursive: true });
+        }
+
+        const compositeLayers = [
+          {
+            input: Buffer.from(svgText),
+            top: 0,
+            left: 0,
+          }
+        ];
+
+        await sharp(templatePath)
+          .composite(compositeLayers)
+          .toFile(outputPath);
+
+        certificateUrl = `/certs/${outputFilename}`;
       } catch (certErr) {
         console.error("Cert gen error:", certErr);
+        // Revert submission status on generation error
+        await db.collection('submissions').updateOne({ _id: sub._id }, { $set: { status: 'pending' } });
+        return new Response(JSON.stringify({ error: 'Failed to generate certificate: ' + certErr.message }), { status: 500 });
       }
     }
 
