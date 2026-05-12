@@ -20,18 +20,8 @@ export async function POST(req) {
     const sub = await db.collection('submissions').findOne({ _id: new ObjectId(submissionId) });
     if (!sub) return new Response(JSON.stringify({ error: 'Submission not found' }), { status: 404 });
 
-    // Delete the previous certificate image if it exists
-    if (sub.certificateUrl) {
-      // certificateUrl is like '/certs/cert_123.png'
-      const oldPath = path.join(process.cwd(), 'public', sub.certificateUrl);
-      if (fs.existsSync(oldPath)) {
-        try {
-          fs.unlinkSync(oldPath);
-        } catch(e) {
-          console.error("Failed to delete cert image:", e);
-        }
-      }
-    }
+    // No longer deleting file from disk as certificates are dynamically generated
+    // and not stored in the public/certs directory anymore.
 
     // Reset submission state
     await db.collection('submissions').updateOne(

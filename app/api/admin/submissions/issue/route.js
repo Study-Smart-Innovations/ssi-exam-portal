@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import nodemailer from 'nodemailer';
 import path from 'path';
 import { requireAuth } from '@/lib/auth';
+import { generateCertificateBuffer } from '@/lib/certificate';
 
 import { getSettings } from '@/lib/settings';
 
@@ -53,16 +54,18 @@ export async function POST(req) {
 
     if (sub.passed) {
       // Send Passed Email with Certificate
-      const outputPath = path.join(process.cwd(), 'public', 'certs', `cert_${sub._id.toString()}.png`);
-      
-      // Safety check: ensure file exists before attaching
-      const fs = require('fs');
-      if (!fs.existsSync(outputPath)) {
-        console.error("Certificate file missing at:", outputPath);
-        return new Response(JSON.stringify({ error: 'Certificate file not found. Please re-evaluate the submission.' }), { status: 404 });
-      }
-
+      // No longer reading from disk, generate buffer on-the-fly
       try {
+        const d = sub.certDate ? new Date(sub.certDate) : new Date();
+        const dateString = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getFullYear())}`;
+        
+        const certBuffer = await generateCertificateBuffer({
+          studentName: student.name,
+          certId: sub.certId,
+          dateString,
+          batchName: exam.batch
+        });
+
         const mailOptions = {
           from: settings.smtp.from,
           to: student.email,
@@ -82,7 +85,7 @@ export async function POST(req) {
           attachments: [
             {
                filename: `SSI_${exam.batch.replace(/\s+/g, '_')}_Certificate.png`,
-               path: outputPath
+               content: certBuffer
             }
           ]
         };
